@@ -1,0 +1,19 @@
+{
+  "name": "aisla",
+  "version": "1.0.0",
+  "description": "AISLA - AI Self-Learning Lab Assistant",
+  "main": "index.js",
+  "scripts": {
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "preview": "cd frontend && npm run preview",
+    "start": "cd frontend && npm run preview"
+  },
+  "keywords": ["ai", "education", "lab-assistant"],
+  "author": "hemanthh35",
+  "license": "MIT",
+  "engines": {
+    "node": "22.16.0",
+    "npm": "10.x"
+  }
+}

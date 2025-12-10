@@ -1,0 +1,10 @@
+# Build configuration for Render.com
+
+builds:
+  - dir: frontend
+    functions:
+      - location: .
+
+routes:
+  - path: "/"
+    destination: frontend

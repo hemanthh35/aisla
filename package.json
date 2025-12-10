@@ -1,13 +1,12 @@
 {
   "name": "aisla",
   "version": "1.0.0",
-  "type": "module",
   "description": "AISLA - AI Self-Learning Lab Assistant",
-  "main": "server.mjs",
+  "main": "server.js",
   "scripts": {
     "install-frontend": "cd frontend && npm install",
     "build": "cd frontend && npm install && npm run build",
-    "start": "node server.mjs",
+    "start": "node server.js",
     "dev": "cd frontend && npm run dev"
   },
   "keywords": ["ai", "education", "lab-assistant"],

@@ -1,10 +1,11 @@
-# Build configuration for Render.com
+services:
+  - type: web
+    name: aisla
+    env: node
+    plan: free
+    buildCommand: npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
 
-builds:
-  - dir: frontend
-    functions:
-      - location: .
-
-routes:
-  - path: "/"
-    destination: frontend

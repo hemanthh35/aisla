@@ -312,37 +312,33 @@ export async function streamExplanation(res, content, intent = 'simple') {
 
 /**
  * Generate quiz questions from experiment content
+ * OPTIMIZED FOR SPEED
  */
 export async function generateQuiz(experiment) {
     console.log(`📝 [AI] Generating quiz for: ${experiment.title}`);
+    const startTime = Date.now();
 
     const experimentContent = typeof experiment.content === 'string'
         ? experiment.content
         : JSON.stringify(experiment.content);
 
-    const prompt = `Create 5 MCQ quiz questions based on this experiment.
+    // OPTIMIZED: Shorter prompt, less content, focus on essentials
+    const prompt = `Create 5 MCQ questions for: ${experiment.title}
 
-Experiment: ${experiment.title}
-Content: ${experimentContent.substring(0, 2500)}
+Content: ${experimentContent.substring(0, 1000)}
 
-Return ONLY valid JSON array:
+Return JSON array:
+[{"type":"mcq","question":"Q?","options":["A","B","C","D"],"answer":"A","explanation":"Why"}]
 
-[
-    {
-        "type": "mcq",
-        "question": "Question text?",
-        "options": ["Option A", "Option B", "Option C", "Option D"],
-        "answer": "The correct option exactly",
-        "explanation": "Why this is correct"
-    }
-]
-
-Generate exactly 5 questions covering different aspects of the experiment.`;
+Make questions clear and concise.`;
 
     const result = await callOllama(TEXT_MODEL, prompt,
-        'You are a quiz creator. Create educational MCQ questions. Respond with JSON only.',
-        { maxTokens: 2500 }
+        'You are a quiz creator. Return JSON only.',
+        { maxTokens: 800 }  // REDUCED from 2500 to 800 for speed
     );
+
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    console.log(`✅ [AI] Quiz generated in ${elapsed}s`);
 
     if (!result.success) {
         return { success: false, error: result.error };
@@ -351,6 +347,7 @@ Generate exactly 5 questions covering different aspects of the experiment.`;
     const questions = parseJSON(result.text);
 
     if (!questions || !Array.isArray(questions)) {
+        // Quick fallback
         return {
             success: true,
             questions: [

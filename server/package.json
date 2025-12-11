@@ -1,6 +1,7 @@
 {
   "name": "aisla-server",
   "version": "1.0.0",
+  "type": "module",
   "description": "AISLA Backend - AI Self-Learning Lab Assistant API",
   "main": "server.js",
   "scripts": {

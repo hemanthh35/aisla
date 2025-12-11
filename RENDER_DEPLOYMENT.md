@@ -54,16 +54,16 @@ Value: 10000
 #### Variable 3: MONGO_URI
 ```
 Key:   MONGO_URI
-Value: mongodb+srv://nadukulahemanth:SpHYVa7BCmlHOwT4@cluster0.fx9xp1x.mongodb.net/aisla?retryWrites=true&w=majority&appName=labs
+Value: <Copy from your local .env file>
 ```
-*(Copy from your .env file)*
+**⚠️ Do NOT paste credentials here - copy from your `.env` file only**
 
 #### Variable 4: JWT_SECRET
 ```
 Key:   JWT_SECRET
-Value: aisla_jwt_secret_key_2025_hackathon
+Value: <Copy from your local .env file>
 ```
-*(Copy from your .env file)*
+**⚠️ Do NOT paste credentials here - copy from your `.env` file only**
 
 ---
 

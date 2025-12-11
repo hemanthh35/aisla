@@ -1,8 +1,13 @@
 // Main server entry point for AISLA Backend
-const express = require('express');
-const dotenv = require('dotenv');
-const cors = require('cors');
-const connectDB = require('./config/db');
+import express from 'express';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import connectDB from './config/db.js';
+import authRoutes from './routes/authRoutes.js';
+import experimentRoutes from './routes/experimentRoutes.js';
+import quizRoutes from './routes/quizRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import badgeRoutes from './routes/badgeRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -15,12 +20,12 @@ app.use(express.json({ limit: '50mb' })); // Parse JSON request bodies with larg
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Routes
-app.use('/api/auth', require('./routes/authRoutes'));
-app.use('/api/experiment', require('./routes/experimentRoutes'));
-app.use('/api/experiments', require('./routes/experimentRoutes')); // Alias for getting all
-app.use('/api/quiz', require('./routes/quizRoutes'));
-app.use('/api/ai', require('./routes/aiRoutes'));
-app.use('/api/badges', require('./routes/badgeRoutes'));
+app.use('/api/auth', authRoutes);
+app.use('/api/experiment', experimentRoutes);
+app.use('/api/experiments', experimentRoutes); // Alias for getting all
+app.use('/api/quiz', quizRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/badges', badgeRoutes);
 
 // Health check route
 app.get('/', (req, res) => {

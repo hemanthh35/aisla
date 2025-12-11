@@ -1,8 +1,8 @@
 // Quiz controller - Quiz generation and submission handling
-const Quiz = require('../models/Quiz');
-const Experiment = require('../models/Experiment');
-const Submission = require('../models/Submission');
-const aiService = require('../services/aiService');
+import Quiz from '../models/Quiz.js';
+import Experiment from '../models/Experiment.js';
+import Submission from '../models/Submission.js';
+import aiService from '../services/aiService.js';
 
 // @desc    Generate quiz for an experiment
 // @route   POST /api/quiz/generate
@@ -275,7 +275,7 @@ const getMySubmissions = async (req, res) => {
     }
 };
 
-module.exports = {
+export {
     generateQuiz,
     getQuiz,
     submitQuiz,

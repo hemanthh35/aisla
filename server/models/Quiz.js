@@ -1,5 +1,5 @@
 // Quiz model - AI-generated quizzes for experiments
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const questionSchema = new mongoose.Schema({
     type: {
@@ -40,4 +40,4 @@ const quizSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('Quiz', quizSchema);
+export default mongoose.model('Quiz', quizSchema);

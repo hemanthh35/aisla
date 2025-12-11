@@ -1,5 +1,5 @@
 // UserBadge model to track badge assignments to users
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const userBadgeSchema = new mongoose.Schema({
     userId: {
@@ -35,4 +35,4 @@ const userBadgeSchema = new mongoose.Schema({
 // Compound index to prevent duplicate badge assignments
 userBadgeSchema.index({ userId: 1, badgeId: 1 }, { unique: true });
 
-module.exports = mongoose.model('UserBadge', userBadgeSchema);
+export default mongoose.model('UserBadge', userBadgeSchema);

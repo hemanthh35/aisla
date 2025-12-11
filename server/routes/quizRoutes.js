@@ -1,15 +1,16 @@
 // Quiz routes
-const express = require('express');
-const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
-const {
+import express from 'express';
+import { protect } from '../middleware/authMiddleware.js';
+import {
     generateQuiz,
     getQuiz,
     submitQuiz,
     getSubmission,
     getExperimentSubmissions,
     getMySubmissions
-} = require('../controllers/quizController');
+} from '../controllers/quizController.js';
+
+const router = express.Router();
 
 // All routes are protected
 router.use(protect);
@@ -22,4 +23,4 @@ router.get('/submission/:experimentId', getSubmission);
 router.get('/submissions/:experimentId', getExperimentSubmissions);
 router.get('/my-submissions', getMySubmissions);
 
-module.exports = router;
+export default router;

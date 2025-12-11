@@ -1,8 +1,7 @@
 // Experiment routes
-const express = require('express');
-const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
-const {
+import express from 'express';
+import { protect } from '../middleware/authMiddleware.js';
+import {
     createExperiment,
     getExperiments,
     getExperiment,
@@ -10,7 +9,9 @@ const {
     deleteExperiment,
     aiExplain,
     extractText
-} = require('../controllers/experimentController');
+} from '../controllers/experimentController.js';
+
+const router = express.Router();
 
 // All routes are protected
 router.use(protect);
@@ -25,4 +26,4 @@ router.delete('/:id', deleteExperiment);
 // AI features
 router.post('/extract-text', extractText);
 
-module.exports = router;
+export default router;

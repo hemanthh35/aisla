@@ -1,5 +1,5 @@
 // Submission model - Student quiz submissions and scores
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const answerSchema = new mongoose.Schema({
     questionId: {
@@ -64,4 +64,4 @@ const submissionSchema = new mongoose.Schema({
 // Index for faster queries
 submissionSchema.index({ userId: 1, experimentId: 1 });
 
-module.exports = mongoose.model('Submission', submissionSchema);
+export default mongoose.model('Submission', submissionSchema);

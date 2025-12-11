@@ -1,5 +1,5 @@
 // Badge model for the Badge Management System
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const badgeSchema = new mongoose.Schema({
     name: {
@@ -52,4 +52,4 @@ const badgeSchema = new mongoose.Schema({
     }
 });
 
-module.exports = mongoose.model('Badge', badgeSchema);
+export default mongoose.model('Badge', badgeSchema);

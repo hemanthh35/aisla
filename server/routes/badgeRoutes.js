@@ -1,8 +1,7 @@
 // Badge routes for badge management system
-const express = require('express');
-const router = express.Router();
-const { protect } = require('../middleware/authMiddleware');
-const {
+import express from 'express';
+import { protect } from '../middleware/authMiddleware.js';
+import {
     createBadge,
     getAllBadges,
     getBadge,
@@ -15,7 +14,9 @@ const {
     getAllUsers,
     getUserBadges,
     getBadgeStats
-} = require('../controllers/badgeController');
+} from '../controllers/badgeController.js';
+
+const router = express.Router();
 
 // All routes require authentication
 router.use(protect);
@@ -51,4 +52,4 @@ router.route('/:id')
     .put(updateBadge)
     .delete(deleteBadge);
 
-module.exports = router;
+export default router;

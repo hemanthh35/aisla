@@ -1,6 +1,6 @@
 // Authentication controller with register, login, and getMe functions
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
+import jwt from 'jsonwebtoken';
+import User from '../models/User.js';
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -139,7 +139,7 @@ const getMe = async (req, res) => {
   }
 };
 
-module.exports = {
+export {
   registerUser,
   loginUser,
   getMe

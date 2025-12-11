@@ -1,6 +1,6 @@
 // Experiment controller - CRUD operations and AI generation
-const Experiment = require('../models/Experiment');
-const aiService = require('../services/aiService');
+import Experiment from '../models/Experiment.js';
+import aiService from '../services/aiService.js';
 
 // @desc    Create new experiment with AI generation
 // @route   POST /api/experiment/create
@@ -239,7 +239,7 @@ const extractText = async (req, res) => {
     }
 };
 
-module.exports = {
+export {
     createExperiment,
     getExperiments,
     getExperiment,

@@ -1,17 +1,12 @@
 // AI Service - Local LLM Service (No API keys required)
-import {
-    generateExperiment,
-    generateExplanation,
-    generateQuiz,
-    initializeModel
-} from './localLLMService.js';
+import { generateExperiment as llmGenerateExperiment, generateExplanation as llmGenerateExplanation, generateQuiz as llmGenerateQuiz } from './localLLMService.js';
 
 /**
  * Generate structured experiment from uploaded content
  */
-const generateExperimentWrapper = async (title, rawContent) => {
+const generateExperiment = async (title, rawContent) => {
     try {
-        return await generateExperiment(title, rawContent);
+        return await llmGenerateExperiment(title, rawContent);
     } catch (error) {
         console.error('AI Experiment Generation Error:', error);
         return { success: false, error: error.message };
@@ -21,9 +16,9 @@ const generateExperimentWrapper = async (title, rawContent) => {
 /**
  * Generate AI explanation for experiment content
  */
-const generateExplanationWrapper = async (content, intent = 'simple') => {
+const generateExplanation = async (content, intent = 'simple') => {
     try {
-        return await generateExplanation(content);
+        return await llmGenerateExplanation(content);
     } catch (error) {
         console.error('AI Explanation Error:', error);
         return { success: false, error: error.message };
@@ -33,10 +28,10 @@ const generateExplanationWrapper = async (content, intent = 'simple') => {
 /**
  * Generate quiz questions for an experiment
  */
-const generateStudyGuide = async (experimentContent) => {
+const generateQuiz = async (experimentContent) => {
     try {
-        const contentSummary = experimentContent.content?.summary || 'Quiz topic';
-        return await generateQuiz(contentSummary);
+        const contentSummary = experimentContent?.summary || 'Quiz topic';
+        return await llmGenerateQuiz(contentSummary);
     } catch (error) {
         console.error('AI Quiz Generation Error:', error);
         return { success: false, error: error.message };
@@ -46,7 +41,7 @@ const generateStudyGuide = async (experimentContent) => {
 /**
  * Evaluate quiz submission and generate feedback
  */
-const evaluateQuiz = async (questions, userAnswers) => {
+const evaluateQuizFunc = async (questions, userAnswers) => {
     try {
         return { 
             success: true, 
@@ -80,12 +75,10 @@ const extractTextFromImage = async (imageBase64) => {
     }
 };
 
-export {
-    generateExperimentWrapper as generateExperiment,
-    generateExplanationWrapper as generateExplanation,
-    generateStudyGuide,
+export default {
+    generateExperiment,
+    generateExplanation,
     generateQuiz,
-    evaluateQuiz,
-    extractTextFromImage,
-    initializeModel
+    evaluateQuiz: evaluateQuizFunc,
+    extractTextFromImage
 };

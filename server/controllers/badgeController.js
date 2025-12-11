@@ -1,7 +1,7 @@
 // Badge controller for managing badges and assignments
-const Badge = require('../models/Badge');
-const UserBadge = require('../models/UserBadge');
-const User = require('../models/User');
+import Badge from '../models/Badge.js';
+import UserBadge from '../models/UserBadge.js';
+import User from '../models/User.js';
 
 // @desc    Create a new badge (Admin only)
 // @route   POST /api/badges
@@ -377,7 +377,7 @@ const getBadgeStats = async (req, res) => {
     }
 };
 
-module.exports = {
+export {
     createBadge,
     getAllBadges,
     getBadge,

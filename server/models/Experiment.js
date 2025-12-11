@@ -1,5 +1,5 @@
 // Experiment model - AI-generated learning unit
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const experimentSchema = new mongoose.Schema({
     title: {
@@ -83,4 +83,4 @@ experimentSchema.pre('save', function (next) {
     next();
 });
 
-module.exports = mongoose.model('Experiment', experimentSchema);
+export default mongoose.model('Experiment', experimentSchema);

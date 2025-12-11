@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#09090b" />
+  <meta name="description"
+    content="AISLA - AI Self-Learning Lab Assistant. Transform your lab experience with intelligent experiment understanding, live simulations, and AI-driven viva preparation." />
+
+  <!-- SEO Meta Tags -->
+  <meta name="keywords" content="AI, lab assistant, learning, experiments, simulations, viva preparation, AISLA" />
+  <meta name="author" content="AISLA Team" />
+
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="AISLA - AI Self-Learning Lab Assistant" />
+  <meta property="og:description" content="Transform your lab experience with AI-powered learning" />
+  <meta property="og:type" content="website" />
+
+  <!-- SVG Favicon (Professional Icon) -->
+  <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%234f46e5'/%3E%3Cstop offset='50%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%2306b6d4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='20' fill='url(%23g)'/%3E%3Cpath d='M50 20 L20 35 L50 50 L80 35 Z' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M20 55 L50 70 L80 55' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M20 45 L50 60 L80 45' fill='none' stroke='white' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+
+  <!-- Google Fonts - Inter & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet" />
+
+  <title>AISLA - AI Self-Learning Lab Assistant</title>
+
+  <style>
+    /* Critical CSS for above-the-fold content and loading state */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #09090b;
+      color: #fafafa;
+      min-height: 100vh;
+    }
+
+    /* Loading Spinner */
+    #root:empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    #root:empty::before {
+      content: '';
+      width: 44px;
+      height: 44px;
+      border: 3px solid rgba(99, 102, 241, 0.15);
+      border-top-color: #6366f1;
+      border-radius: 50%;
+      animation: spin 0.85s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <noscript>You need to enable JavaScript to run this app.</noscript>
+  <div id="root"></div>
+</body>
+
+</html>

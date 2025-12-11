@@ -1,6 +1,0 @@
-@ocr implementatuion architechture
-  >image to ocr and then text extraction and then validations combined to the schem of evl and then its validated and the scores are out bulk and then sent to mail.
-
-@profile pages faculty pages and the students pages profiles page hacving their prv works 
-  >role based access 
-@interactive labs for the phd scholars and then the student and the virtual computer proposal to make 

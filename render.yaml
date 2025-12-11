@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: aisla-server
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+
+  - type: web
+    name: aisla-client
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: cd client && npm install && npm run build
+    startCommand: cd client && npm start
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://aisla-server.onrender.com

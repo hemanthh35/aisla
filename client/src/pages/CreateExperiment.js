@@ -1,4 +1,4 @@
-// AISLA - Create Experiment Page (Faculty)
+// AISLA - Create Experiment Page with Real-Time Progress
 import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -19,6 +19,13 @@ const CreateExperiment = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const [step, setStep] = useState(1);
+
+    // Progress state for streaming
+    const [progress, setProgress] = useState({
+        status: '',
+        elapsed: 0,
+        message: ''
+    });
 
     // Check if user is faculty
     if (user?.role !== 'faculty' && user?.role !== 'admin') {
@@ -52,6 +59,8 @@ const CreateExperiment = () => {
             const base64 = reader.result.split(',')[1];
 
             setLoading(true);
+            setProgress({ status: 'extracting', message: 'Extracting text from image...' });
+
             try {
                 const token = localStorage.getItem('token');
                 const res = await axios.post('/api/experiment/extract-text',
@@ -64,6 +73,7 @@ const CreateExperiment = () => {
                     content: formData.content + '\n' + res.data.text,
                     contentType: 'image'
                 });
+                setProgress({ status: '', message: '' });
             } catch (err) {
                 setError('Failed to extract text from image');
             } finally {
@@ -73,6 +83,7 @@ const CreateExperiment = () => {
         reader.readAsDataURL(file);
     };
 
+    // Streaming submit with real-time progress
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
@@ -82,29 +93,95 @@ const CreateExperiment = () => {
             return;
         }
 
-        if (!formData.content.trim()) {
-            setError('Please enter content for the experiment');
-            return;
-        }
-
-        if (formData.content.length < 50) {
+        if (!formData.content.trim() || formData.content.length < 50) {
             setError('Please provide more detailed content (at least 50 characters)');
             return;
         }
 
         setLoading(true);
+        setProgress({
+            status: 'generating',
+            elapsed: 0,
+            message: 'Starting AI generation... Estimated time: 30-60 seconds'
+        });
+
+        // Timer for elapsed time
+        const startTime = Date.now();
+        const timer = setInterval(() => {
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            setProgress(prev => ({ ...prev, elapsed }));
+        }, 1000);
 
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post('/api/experiment/create', formData, {
-                headers: { Authorization: `Bearer ${token}` }
+
+            // Use streaming endpoint
+            const response = await fetch('/api/experiment/create-stream', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(formData)
             });
 
-            if (res.data.success) {
-                navigate(`/experiment/${res.data.experiment._id}`);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n').filter(l => l.startsWith('data: '));
+
+                for (const line of lines) {
+                    try {
+                        const data = JSON.parse(line.slice(6));
+
+                        switch (data.type) {
+                            case 'START':
+                                setProgress({
+                                    status: 'generating',
+                                    elapsed: 0,
+                                    message: data.message
+                                });
+                                break;
+
+                            case 'PROGRESS':
+                                setProgress({
+                                    status: 'generating',
+                                    elapsed: data.elapsed,
+                                    message: data.message
+                                });
+                                break;
+
+                            case 'DONE':
+                                clearInterval(timer);
+                                setProgress({
+                                    status: 'done',
+                                    elapsed: data.elapsed,
+                                    message: data.message
+                                });
+                                // Navigate to the new experiment
+                                setTimeout(() => {
+                                    navigate(`/experiment/${data.experiment._id}`);
+                                }, 500);
+                                break;
+
+                            case 'ERROR':
+                                throw new Error(data.error);
+                        }
+                    } catch (parseErr) {
+                        // Skip invalid JSON
+                    }
+                }
             }
+
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to create experiment');
+            clearInterval(timer);
+            setError(err.message || 'Failed to create experiment');
+            setProgress({ status: '', elapsed: 0, message: '' });
         } finally {
             setLoading(false);
         }
@@ -115,7 +192,7 @@ const CreateExperiment = () => {
             {/* Header */}
             <header className="create-header">
                 <Link to="/dashboard" className="back-button">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                     </svg>
                     Back to Dashboard
@@ -145,7 +222,7 @@ const CreateExperiment = () => {
             <div className="create-form-card">
                 {error && (
                     <div className="error-alert">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <circle cx="12" cy="12" r="10" />
                             <line x1="12" y1="8" x2="12" y2="12" />
                             <line x1="12" y1="16" x2="12.01" y2="16" />
@@ -224,7 +301,7 @@ const CreateExperiment = () => {
                                     }}
                                 >
                                     Continue
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M5 12h14M12 5l7 7-7 7" />
                                     </svg>
                                 </button>
@@ -250,7 +327,7 @@ const CreateExperiment = () => {
                                         disabled={loading}
                                     />
                                     <div className="upload-option-content">
-                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
                                             <circle cx="8.5" cy="8.5" r="1.5" />
                                             <polyline points="21 15 16 10 5 21" />
@@ -296,7 +373,7 @@ const CreateExperiment = () => {
                                     disabled={loading}
                                 >
                                     Continue
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M5 12h14M12 5l7 7-7 7" />
                                     </svg>
                                 </button>
@@ -326,22 +403,49 @@ const CreateExperiment = () => {
                                     <span className="review-value">{formData.difficulty}</span>
                                 </div>
                                 <div className="review-item">
-                                    <span className="review-label">Content Preview:</span>
+                                    <span className="review-label">Content:</span>
                                     <span className="review-value">{formData.content.substring(0, 200)}...</span>
                                 </div>
                             </div>
 
-                            <div className="ai-info">
-                                <div className="ai-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                                    </svg>
+                            {/* Progress Display */}
+                            {loading && progress.status && (
+                                <div className="generation-progress">
+                                    <div className="progress-indicator">
+                                        <div className="progress-spinner"></div>
+                                        <div className="progress-info">
+                                            <div className="progress-status">{progress.message}</div>
+                                            <div className="progress-time">
+                                                ⏱️ Elapsed: <strong>{progress.elapsed}s</strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className="progress-bar-container">
+                                        <div
+                                            className="progress-bar-fill"
+                                            style={{ width: `${Math.min((progress.elapsed / 60) * 100, 95)}%` }}
+                                        ></div>
+                                    </div>
                                 </div>
-                                <div className="ai-text">
-                                    <h4>AI-Powered Generation</h4>
-                                    <p>Our AI will analyze your content and generate a structured experiment with aim, theory, procedure, formulas, examples, and more.</p>
+                            )}
+
+                            {!loading && (
+                                <div className="ai-info">
+                                    <div className="ai-icon">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                        </svg>
+                                    </div>
+                                    <div className="ai-text">
+                                        <h4>AI-Powered Generation</h4>
+                                        <p>
+                                            Our AI will analyze your content and generate a structured experiment.
+                                            <br />
+                                            <strong>⏱️ Estimated time: 30-60 seconds</strong>
+                                        </p>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="step-actions">
                                 <button
@@ -360,11 +464,11 @@ const CreateExperiment = () => {
                                     {loading ? (
                                         <>
                                             <span className="spinner"></span>
-                                            Generating with AI...
+                                            Generating... {progress.elapsed}s
                                         </>
                                     ) : (
                                         <>
-                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                 <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                                             </svg>
                                             Generate Experiment

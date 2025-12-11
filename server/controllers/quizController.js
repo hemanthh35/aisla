@@ -1,4 +1,4 @@
-// Quiz controller - Quiz generation and submission handling
+// Quiz controller - Quiz submission handling
 import Quiz from '../models/Quiz.js';
 import Experiment from '../models/Experiment.js';
 import Submission from '../models/Submission.js';
@@ -115,19 +115,13 @@ const submitQuiz = async (req, res) => {
             return res.status(404).json({ message: 'Quiz not found' });
         }
 
-        // Check if already submitted
-        const existingSubmission = await Submission.findOne({
+        // Get attempt number (allow multiple attempts)
+        const previousAttempts = await Submission.countDocuments({
             userId: req.user._id,
             experimentId,
             quizId
         });
-
-        if (existingSubmission) {
-            return res.status(400).json({
-                message: 'You have already submitted this quiz',
-                submission: existingSubmission
-            });
-        }
+        const attemptNumber = previousAttempts + 1;
 
         // Evaluate answers using AI
         const aiResult = await aiService.evaluateQuiz(quiz.questions, answers);
@@ -156,7 +150,7 @@ const submitQuiz = async (req, res) => {
 
         const percentage = Math.round((correctCount / quiz.questions.length) * 100);
 
-        // Create submission
+        // Create submission (new attempt)
         const submission = await Submission.create({
             userId: req.user._id,
             experimentId,
@@ -165,6 +159,7 @@ const submitQuiz = async (req, res) => {
             score: correctCount,
             totalQuestions: quiz.questions.length,
             percentage,
+            attemptNumber,
             feedback: {
                 overallFeedback: evaluation.overallFeedback,
                 topicsToRevise: evaluation.topicsToRevise || [],
@@ -175,8 +170,9 @@ const submitQuiz = async (req, res) => {
 
         res.status(201).json({
             success: true,
-            message: 'Quiz submitted successfully',
+            message: `Quiz submitted successfully (Attempt #${attemptNumber})`,
             submission,
+            attemptNumber,
             correctAnswers: quiz.questions.map(q => ({
                 questionId: q._id,
                 answer: q.answer,
@@ -189,23 +185,27 @@ const submitQuiz = async (req, res) => {
     }
 };
 
-// @desc    Get user's submission for an experiment
+// @desc    Get user's submission(s) for an experiment
 // @route   GET /api/quiz/submission/:experimentId
 // @access  Private
 const getSubmission = async (req, res) => {
     try {
-        const submission = await Submission.findOne({
+        // Get all submissions for this user and experiment
+        const submissions = await Submission.find({
             userId: req.user._id,
             experimentId: req.params.experimentId
-        }).populate('quizId');
+        }).populate('quizId').sort({ submittedAt: -1 });
 
-        if (!submission) {
+        if (!submissions || submissions.length === 0) {
             return res.status(404).json({ message: 'No submission found' });
         }
 
+        // Return the latest submission and history
         res.json({
             success: true,
-            submission
+            submission: submissions[0], // Latest attempt
+            totalAttempts: submissions.length,
+            history: submissions // All attempts
         });
     } catch (error) {
         console.error('Get Submission Error:', error);

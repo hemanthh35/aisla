@@ -3,6 +3,7 @@ import React, { useContext, useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
+import AIChatWidget from '../components/AIChatWidget';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -14,6 +15,13 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({});
   const [userBadges, setUserBadges] = useState([]);
+
+  // Quiz Management (Faculty)
+  const [showQuizPanel, setShowQuizPanel] = useState(false);
+  const [selectedExperiment, setSelectedExperiment] = useState(null);
+  const [quizSubmissions, setQuizSubmissions] = useState([]);
+  const [quizStats, setQuizStats] = useState({});
+  const [loadingSubmissions, setLoadingSubmissions] = useState(false);
 
   const isFaculty = user?.role === 'faculty' || user?.role === 'admin';
   const isAdmin = user?.role === 'admin';
@@ -70,6 +78,79 @@ const Dashboard = () => {
   const handleLogout = () => {
     logout();
     navigate('/login');
+  };
+
+  // Fetch quiz submissions for a specific experiment (Faculty)
+  const fetchQuizSubmissions = async (experimentId) => {
+    setLoadingSubmissions(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`/api/quiz/submissions/${experimentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setQuizSubmissions(res.data.submissions || []);
+      setQuizStats(res.data.stats || {});
+    } catch (err) {
+      console.error('Error fetching submissions:', err);
+      setQuizSubmissions([]);
+    } finally {
+      setLoadingSubmissions(false);
+    }
+  };
+
+  // Select an experiment to view its quiz submissions
+  const handleSelectExperiment = (exp) => {
+    setSelectedExperiment(exp);
+    fetchQuizSubmissions(exp._id);
+  };
+
+  // Export submissions to CSV
+  const exportToCSV = () => {
+    if (!quizSubmissions.length) return;
+
+    const headers = ['Student Name', 'Email', 'Score', 'Percentage', 'Attempt', 'Date'];
+    const rows = quizSubmissions.map(sub => [
+      sub.userId?.name || 'Unknown',
+      sub.userId?.email || 'N/A',
+      `${sub.score}/${sub.totalQuestions}`,
+      `${sub.percentage}%`,
+      sub.attemptNumber || 1,
+      new Date(sub.submittedAt).toLocaleDateString()
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedExperiment?.title || 'quiz'}_submissions.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Delete experiment handler
+  const handleDeleteExperiment = async (experimentId) => {
+    if (!window.confirm('Are you sure you want to delete this experiment? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`/api/experiments/${experimentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Remove from local state
+      setExperiments(experiments.filter(exp => exp._id !== experimentId));
+      alert('Experiment deleted successfully');
+    } catch (error) {
+      console.error('Delete error:', error);
+      alert(error.response?.data?.message || 'Failed to delete experiment');
+    }
   };
 
   const getInitials = (name) => {
@@ -136,14 +217,26 @@ const Dashboard = () => {
             </Link>
 
             {isFaculty && (
-              <Link to="/experiment/create" className="sidebar-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="16" />
-                  <line x1="8" y1="12" x2="16" y2="12" />
-                </svg>
-                Create Experiment
-              </Link>
+              <>
+                <Link to="/experiment/create" className="sidebar-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="12" y1="8" x2="12" y2="16" />
+                    <line x1="8" y1="12" x2="16" y2="12" />
+                  </svg>
+                  Create Experiment
+                </Link>
+                <button
+                  className={`sidebar-link ${showQuizPanel ? 'active' : ''}`}
+                  onClick={() => setShowQuizPanel(!showQuizPanel)}
+                >
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 11l3 3L22 4" />
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                  </svg>
+                  Quiz Results
+                </button>
+              </>
             )}
 
             <div className="sidebar-link">
@@ -159,13 +252,22 @@ const Dashboard = () => {
             </div>
 
             {!isFaculty && (
-              <div className="sidebar-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="8" r="7" />
-                  <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
-                </svg>
-                My Progress
-              </div>
+              <>
+                <div className="sidebar-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="7" />
+                    <polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88" />
+                  </svg>
+                  My Progress
+                </div>
+                <a href="#quiz-history" className="sidebar-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  Quiz History
+                </a>
+              </>
             )}
 
             {isAdmin && (
@@ -357,33 +459,95 @@ const Dashboard = () => {
                         <span className="experiment-quiz-badge">Quiz Available</span>
                       )}
                     </div>
+                    {(user?.role === 'admin' || (isFaculty && exp.createdBy === user?._id)) && (
+                      <div className="experiment-actions" onClick={(e) => e.stopPropagation()}>
+                        <button
+                          className="experiment-action-btn edit-btn"
+                          onClick={() => navigate(`/experiment/${exp._id}/edit`)}
+                          title="Edit Experiment"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                          </svg>
+                        </button>
+                        <button
+                          className="experiment-action-btn delete-btn"
+                          onClick={() => handleDeleteExperiment(exp._id)}
+                          title="Delete Experiment"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
             )}
           </section>
 
-          {/* Recent Submissions (Student only) */}
-          {!isFaculty && submissions.length > 0 && (
-            <section className="submissions-section">
+          {/* Quiz History (Student only) */}
+          {!isFaculty && (
+            <section id="quiz-history" className="submissions-section">
               <div className="section-header">
-                <h3 className="section-title">Recent Quiz Results</h3>
+                <h3 className="section-title">Quiz History</h3>
+                {submissions.length > 0 && (
+                  <span className="submissions-count">{submissions.length} attempts</span>
+                )}
               </div>
-              <div className="submissions-list">
-                {submissions.slice(0, 5).map((sub) => (
-                  <div key={sub._id} className="submission-item">
-                    <div className="submission-info">
-                      <span className="submission-title">{sub.experimentId?.title || 'Experiment'}</span>
-                      <span className="submission-date">
-                        {new Date(sub.submittedAt).toLocaleDateString()}
-                      </span>
+              {submissions.length === 0 ? (
+                <div className="empty-history">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <circle cx="12" cy="12" r="10" />
+                    <polyline points="12 6 12 12 16 14" />
+                  </svg>
+                  <p>No quiz attempts yet</p>
+                  <span>Take a quiz from any experiment to see your history here</span>
+                </div>
+              ) : (
+                <div className="submissions-list">
+                  {submissions.slice(0, 10).map((sub) => (
+                    <div key={sub._id} className="submission-item">
+                      <div className="submission-info">
+                        <span className="submission-title">{sub.experimentId?.title || 'Experiment'}</span>
+                        <div className="submission-meta">
+                          <span className="submission-attempt">
+                            Attempt #{sub.attemptNumber || 1}
+                          </span>
+                          <span className="submission-date">
+                            {new Date(sub.submittedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="submission-actions">
+                        <div className={`submission-score ${sub.percentage >= 70 ? 'good' : sub.percentage >= 50 ? 'average' : 'poor'}`}>
+                          {sub.percentage}%
+                        </div>
+                        <button
+                          className="retake-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/experiment/${sub.experimentId?._id}/quiz`);
+                          }}
+                          title="Retake Quiz"
+                        >
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                            <path d="M3 3v5h5" />
+                            <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                            <path d="M16 21h5v-5" />
+                          </svg>
+                          Retake
+                        </button>
+                      </div>
                     </div>
-                    <div className={`submission-score ${sub.percentage >= 70 ? 'good' : sub.percentage >= 50 ? 'average' : 'poor'}`}>
-                      {sub.percentage}%
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
           )}
 
@@ -422,6 +586,125 @@ const Dashboard = () => {
           )}
         </div>
       </main>
+
+      {/* Quiz Results Panel (Faculty) */}
+      {isFaculty && showQuizPanel && (
+        <div className="quiz-panel-overlay" onClick={() => setShowQuizPanel(false)}>
+          <div className="quiz-results-panel" onClick={e => e.stopPropagation()}>
+            <div className="quiz-panel-header">
+              <h2>Quiz Results</h2>
+              <button className="close-panel-btn" onClick={() => setShowQuizPanel(false)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="quiz-panel-body">
+              {/* Experiment Selector */}
+              <div className="experiment-selector">
+                <h3>Select Experiment</h3>
+                <div className="experiment-chips">
+                  {experiments.filter(exp => exp.quizGenerated).map(exp => (
+                    <button
+                      key={exp._id}
+                      className={`exp-chip ${selectedExperiment?._id === exp._id ? 'active' : ''}`}
+                      onClick={() => handleSelectExperiment(exp)}
+                    >
+                      {exp.title}
+                    </button>
+                  ))}
+                  {experiments.filter(exp => exp.quizGenerated).length === 0 && (
+                    <p className="no-quizzes">No experiments with quizzes yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Submissions List */}
+              {selectedExperiment && (
+                <div className="quiz-submissions">
+                  <div className="submissions-header">
+                    <h3>{selectedExperiment.title} - Submissions</h3>
+                    {quizSubmissions.length > 0 && (
+                      <button className="export-btn" onClick={exportToCSV}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                          <polyline points="7 10 12 15 17 10" />
+                          <line x1="12" y1="15" x2="12" y2="3" />
+                        </svg>
+                        Export CSV
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Stats */}
+                  {quizStats && quizSubmissions.length > 0 && (
+                    <div className="quiz-stats-row">
+                      <div className="stat-box">
+                        <span className="stat-number">{quizStats.totalSubmissions || quizSubmissions.length}</span>
+                        <span className="stat-text">Total</span>
+                      </div>
+                      <div className="stat-box">
+                        <span className="stat-number">{quizStats.averageScore || 0}%</span>
+                        <span className="stat-text">Average</span>
+                      </div>
+                      <div className="stat-box good">
+                        <span className="stat-number">{quizStats.highestScore || 0}%</span>
+                        <span className="stat-text">Highest</span>
+                      </div>
+                      <div className="stat-box poor">
+                        <span className="stat-number">{quizStats.lowestScore || 0}%</span>
+                        <span className="stat-text">Lowest</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {loadingSubmissions ? (
+                    <div className="loading-submissions">
+                      <div className="loader small"></div>
+                      <span>Loading submissions...</span>
+                    </div>
+                  ) : quizSubmissions.length === 0 ? (
+                    <div className="no-submissions">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M8 12h8M12 8v8" />
+                      </svg>
+                      <p>No submissions yet</p>
+                    </div>
+                  ) : (
+                    <div className="submissions-table">
+                      <div className="table-header">
+                        <span>Student</span>
+                        <span>Score</span>
+                        <span>Attempt</span>
+                        <span>Date</span>
+                      </div>
+                      {quizSubmissions.map(sub => (
+                        <div key={sub._id} className="table-row">
+                          <div className="student-cell">
+                            <span className="student-name">{sub.userId?.name || 'Unknown'}</span>
+                            <span className="student-email">{sub.userId?.email}</span>
+                          </div>
+                          <span className={`score-cell ${sub.percentage >= 70 ? 'good' : sub.percentage >= 50 ? 'average' : 'poor'}`}>
+                            {sub.percentage}%
+                          </span>
+                          <span className="attempt-cell">#{sub.attemptNumber || 1}</span>
+                          <span className="date-cell">{new Date(sub.submittedAt).toLocaleDateString()}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Chat Widget - Floating Chat Assistant */}
+      <AIChatWidget />
     </div>
   );
 };

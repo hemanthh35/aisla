@@ -8,8 +8,9 @@ import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
 import experimentRoutes from './routes/experimentRoutes.js';
 import quizRoutes from './routes/quizRoutes.js';
-import aiRoutes from './routes/aiRoutes.js';
 import badgeRoutes from './routes/badgeRoutes.js';
+import chatRoutes from './routes/chat.js';
+import aiRoutes from './routes/aiRoutes.js';
 
 // ES module __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
@@ -30,14 +31,15 @@ app.use('/api/auth', authRoutes);
 app.use('/api/experiment', experimentRoutes);
 app.use('/api/experiments', experimentRoutes); // Alias for getting all
 app.use('/api/quiz', quizRoutes);
-app.use('/api/ai', aiRoutes);
 app.use('/api/badges', badgeRoutes);
+app.use('/api/chat', chatRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Serve React static files in production
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from React build
   app.use(express.static(path.join(__dirname, '../client/build')));
-  
+
   // Handle React routing - return index.html for all non-API routes
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/build/index.html'));
@@ -54,7 +56,8 @@ if (process.env.NODE_ENV === 'production') {
         experiment: '/api/experiment',
         quiz: '/api/quiz',
         ai: '/api/ai',
-        badges: '/api/badges'
+        badges: '/api/badges',
+        chat: '/api/chat'
       }
     });
   });

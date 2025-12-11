@@ -17,35 +17,10 @@ const experimentSchema = new mongoose.Schema({
         text: String,
         fileUrl: String
     },
-    // AI-generated structured content
+    // AI-generated structured content - completely flexible
     content: {
-        aim: {
-            type: String,
-            required: true
-        },
-        theory: {
-            type: String,
-            required: true
-        },
-        procedure: {
-            type: String,
-            required: true
-        },
-        keyFormulas: [{
-            type: String
-        }],
-        example: {
-            type: String
-        },
-        commonMistakes: [{
-            type: String
-        }],
-        realWorldApplication: {
-            type: String
-        },
-        summary: {
-            type: String
-        }
+        type: mongoose.Schema.Types.Mixed,
+        required: true
     },
     // Quiz associated with this experiment
     quizGenerated: {
@@ -75,6 +50,9 @@ const experimentSchema = new mongoose.Schema({
         type: Date,
         default: Date.now
     }
+}, {
+    // Disable strict mode to allow flexible content
+    strict: false
 });
 
 // Update the updatedAt field before saving

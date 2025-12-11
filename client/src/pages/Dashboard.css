@@ -897,6 +897,88 @@
     border-radius: var(--radius-sm);
 }
 
+.experiment-actions {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    width: 100%;
+}
+
+.experiment-action-btn {
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    padding: 0;
+}
+
+.experiment-action-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.experiment-action-btn.edit-btn {
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    color: #60a5fa;
+}
+
+.experiment-action-btn.edit-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+    border-color: rgba(59, 130, 246, 0.5);
+    transform: scale(1.05);
+}
+
+.experiment-action-btn.delete-btn {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: #f87171;
+}
+
+.experiment-action-btn.delete-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.5);
+    transform: scale(1.05);
+}
+
+.experiment-btn {
+    flex: 1;
+    padding: 0.625rem 1rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all 0.25s ease;
+}
+
+.experiment-btn.view-btn {
+    background: rgba(99, 102, 241, 0.15);
+    color: var(--primary-300);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.experiment-btn.view-btn:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.5);
+}
+
+.experiment-btn.quiz-btn {
+    background: linear-gradient(135deg, var(--primary-500), var(--primary-600));
+    color: white;
+    border: none;
+}
+
+.experiment-btn.quiz-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+}
+
 /* Submissions List */
 .submissions-list {
     display: flex;
@@ -1207,5 +1289,512 @@
 @media (max-width: 768px) {
     .user-badges-grid {
         grid-template-columns: 1fr;
+    }
+}
+
+/* ================================
+   Quiz History / Submissions
+   ================================ */
+
+.submissions-section {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-2xl);
+    padding: 1.5rem;
+    margin-top: 2rem;
+}
+
+.submissions-section .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.submissions-count {
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--neutral-400);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.375rem 0.875rem;
+    border-radius: var(--radius-full);
+}
+
+.submissions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.submission-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-lg);
+    transition: all 0.2s ease;
+}
+
+.submission-item:hover {
+    background: rgba(255, 255, 255, 0.04);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.submission-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.375rem;
+}
+
+.submission-title {
+    font-weight: 600;
+    color: var(--neutral-100);
+    font-size: 0.9375rem;
+}
+
+.submission-meta {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.submission-attempt {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-400);
+    background: rgba(99, 102, 241, 0.15);
+    padding: 0.25rem 0.625rem;
+    border-radius: var(--radius-full);
+}
+
+.submission-date {
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
+}
+
+.submission-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.submission-score {
+    font-size: 1.125rem;
+    font-weight: 700;
+    min-width: 50px;
+    text-align: center;
+}
+
+.submission-score.good {
+    color: var(--success-400);
+}
+
+.submission-score.average {
+    color: var(--warning-400);
+}
+
+.submission-score.poor {
+    color: #ef4444;
+}
+
+.retake-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--neutral-300);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.retake-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.retake-btn:hover {
+    color: var(--primary-400);
+    background: rgba(99, 102, 241, 0.1);
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+@media (max-width: 640px) {
+    .submission-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .submission-actions {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .submission-meta {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+}
+
+/* Empty History State */
+.empty-history {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem 2rem;
+    text-align: center;
+}
+
+.empty-history svg {
+    width: 48px;
+    height: 48px;
+    color: var(--neutral-500);
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-history p {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-300);
+    margin-bottom: 0.5rem;
+}
+
+.empty-history span {
+    font-size: 0.875rem;
+    color: var(--neutral-500);
+}
+
+/* ================================
+   Quiz Results Panel (Faculty)
+   ================================ */
+
+.quiz-panel-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.quiz-results-panel {
+    width: 100%;
+    max-width: 900px;
+    max-height: 90vh;
+    background: var(--neutral-900);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-2xl);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.quiz-results-panel .quiz-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem 2rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.quiz-results-panel .quiz-panel-header h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--neutral-100);
+}
+
+.close-panel-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.close-panel-btn svg {
+    width: 20px;
+    height: 20px;
+    color: var(--neutral-400);
+}
+
+.close-panel-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.close-panel-btn:hover svg {
+    color: var(--neutral-100);
+}
+
+.quiz-results-panel .quiz-panel-body {
+    padding: 1.5rem 2rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.experiment-selector h3 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-400);
+    margin-bottom: 1rem;
+}
+
+.experiment-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.exp-chip {
+    padding: 0.625rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-300);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.exp-chip:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.exp-chip.active {
+    color: white;
+    background: var(--gradient-primary);
+    border-color: transparent;
+}
+
+.no-quizzes {
+    color: var(--neutral-500);
+    font-size: 0.875rem;
+    font-style: italic;
+}
+
+.quiz-submissions .submissions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.quiz-submissions .submissions-header h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-100);
+}
+
+.export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: white;
+    background: var(--gradient-primary);
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.export-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.export-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+}
+
+.quiz-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.stat-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-lg);
+}
+
+.stat-box .stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--primary-400);
+}
+
+.stat-box .stat-text {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--neutral-500);
+    text-transform: uppercase;
+}
+
+.stat-box.good .stat-number {
+    color: var(--success-400);
+}
+
+.stat-box.poor .stat-number {
+    color: #ef4444;
+}
+
+.loading-submissions,
+.no-submissions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 3rem;
+    text-align: center;
+}
+
+.no-submissions svg {
+    width: 48px;
+    height: 48px;
+    color: var(--neutral-500);
+    opacity: 0.5;
+    margin-bottom: 1rem;
+}
+
+.no-submissions p {
+    font-size: 0.9375rem;
+    color: var(--neutral-400);
+}
+
+.loading-submissions {
+    flex-direction: row;
+    gap: 0.75rem;
+}
+
+.submissions-table {
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.table-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 0.875rem 1.25rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--neutral-500);
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    align-items: center;
+}
+
+.table-row:last-child {
+    border-bottom: none;
+}
+
+.table-row:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.student-cell {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.student-name {
+    font-weight: 600;
+    color: var(--neutral-100);
+    font-size: 0.9375rem;
+}
+
+.student-email {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+}
+
+.score-cell {
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+.score-cell.good {
+    color: var(--success-400);
+}
+
+.score-cell.average {
+    color: var(--warning-400);
+}
+
+.score-cell.poor {
+    color: #ef4444;
+}
+
+.attempt-cell {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--primary-400);
+}
+
+.date-cell {
+    font-size: 0.875rem;
+    color: var(--neutral-400);
+}
+
+@media (max-width: 768px) {
+    .quiz-panel-overlay {
+        padding: 1rem;
+    }
+
+    .quiz-results-panel .quiz-panel-header,
+    .quiz-results-panel .quiz-panel-body {
+        padding: 1rem 1.25rem;
+    }
+
+    .quiz-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .table-header,
+    .table-row {
+        grid-template-columns: 1.5fr 1fr 0.75fr 1fr;
+        font-size: 0.8125rem;
+        padding: 0.75rem 1rem;
     }
 }

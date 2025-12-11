@@ -55,6 +55,10 @@ const submissionSchema = new mongoose.Schema({
         strengths: [String],
         suggestions: [String]
     },
+    attemptNumber: {
+        type: Number,
+        default: 1
+    },
     submittedAt: {
         type: Date,
         default: Date.now

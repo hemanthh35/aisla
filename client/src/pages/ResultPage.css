@@ -63,24 +63,28 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
     font-size: 0.875rem;
     font-weight: 500;
     color: var(--neutral-400);
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: var(--radius-lg);
-    transition: all 0.25s ease;
+    background: transparent;
+    border: none;
+    padding: 0;
+    transition: all 0.2s ease;
+    text-decoration: none;
 }
 
 .back-button svg {
     width: 16px;
     height: 16px;
+    transition: transform 0.2s ease;
 }
 
 .back-button:hover {
-    color: var(--neutral-100);
-    background: rgba(255, 255, 255, 0.06);
+    color: var(--primary-400);
+}
+
+.back-button:hover svg {
+    transform: translateX(-3px);
 }
 
 .result-title {

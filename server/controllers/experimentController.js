@@ -1,4 +1,4 @@
-// Experiment controller - CRUD operations and AI generation
+// Experiment controller - CRUD operations
 import Experiment from '../models/Experiment.js';
 import aiService from '../services/aiService.js';
 

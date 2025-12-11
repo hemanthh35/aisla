@@ -1,1 +1,1 @@
-web: cd server && npm start
+web: NODE_ENV=production cd server && npm start

@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import AIChatWidget from '../components/AIChatWidget';
+import ConfirmModal from '../components/ConfirmModal';
 import './Dashboard.css';
 
 const Dashboard = () => {
@@ -22,6 +23,13 @@ const Dashboard = () => {
   const [quizSubmissions, setQuizSubmissions] = useState([]);
   const [quizStats, setQuizStats] = useState({});
   const [loadingSubmissions, setLoadingSubmissions] = useState(false);
+
+  // Delete confirmation modal
+  const [deleteModal, setDeleteModal] = useState({
+    isOpen: false,
+    experimentId: null,
+    experimentTitle: ''
+  });
 
   const isFaculty = user?.role === 'faculty' || user?.role === 'admin';
   const isAdmin = user?.role === 'admin';
@@ -134,9 +142,18 @@ const Dashboard = () => {
 
   // Delete experiment handler
   const handleDeleteExperiment = async (experimentId) => {
-    if (!window.confirm('Are you sure you want to delete this experiment? This action cannot be undone.')) {
-      return;
-    }
+    // Show confirmation modal
+    const experiment = experiments.find(exp => exp._id === experimentId);
+    setDeleteModal({
+      isOpen: true,
+      experimentId,
+      experimentTitle: experiment?.title || 'Experiment'
+    });
+  };
+
+  const confirmDeleteExperiment = async () => {
+    const { experimentId } = deleteModal;
+    setDeleteModal({ isOpen: false, experimentId: null, experimentTitle: '' });
 
     try {
       const token = localStorage.getItem('token');
@@ -146,7 +163,6 @@ const Dashboard = () => {
 
       // Remove from local state
       setExperiments(experiments.filter(exp => exp._id !== experimentId));
-      alert('Experiment deleted successfully');
     } catch (error) {
       console.error('Delete error:', error);
       alert(error.response?.data?.message || 'Failed to delete experiment');
@@ -251,6 +267,14 @@ const Dashboard = () => {
               Experiments
             </div>
 
+            <Link to="/coding-grounds" className="sidebar-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="16 18 22 12 16 6" />
+                <polyline points="8 6 2 12 8 18" />
+              </svg>
+              Coding Grounds
+            </Link>
+
             {!isFaculty && (
               <>
                 <div className="sidebar-link">
@@ -271,13 +295,23 @@ const Dashboard = () => {
             )}
 
             {isAdmin && (
-              <Link to="/badge-management" className="sidebar-link">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="8" r="6" />
-                  <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
-                </svg>
-                Badge Management
-              </Link>
+              <>
+                <Link to="/badge-management" className="sidebar-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="8" r="6" />
+                    <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+                  </svg>
+                  Badge Management
+                </Link>
+                <Link to="/diagram-generator" className="sidebar-link">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2" />
+                    <path d="M3 9h18" />
+                    <path d="M9 21V9" />
+                  </svg>
+                  Diagram Generator
+                </Link>
+              </>
             )}
           </div>
         </nav>
@@ -405,9 +439,21 @@ const Dashboard = () => {
             </div>
 
             {loading ? (
-              <div className="loading-state">
-                <div className="loader"></div>
-                <p>Loading experiments...</p>
+              <div className="experiments-grid">
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                  <div key={i} className="experiment-card skeleton-card">
+                    <div className="skeleton-card-header">
+                      <div className="skeleton skeleton-icon"></div>
+                      <div className="skeleton skeleton-badge"></div>
+                    </div>
+                    <div className="skeleton skeleton-card-title"></div>
+                    <div className="skeleton skeleton-card-text"></div>
+                    <div className="skeleton skeleton-card-text short"></div>
+                    <div className="skeleton-card-footer">
+                      <div className="skeleton skeleton-date"></div>
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : experiments.length === 0 ? (
               <div className="empty-state">
@@ -459,18 +505,20 @@ const Dashboard = () => {
                         <span className="experiment-quiz-badge">Quiz Available</span>
                       )}
                     </div>
-                    {(user?.role === 'admin' || (isFaculty && exp.createdBy === user?._id)) && (
+                    {(isAdmin || (isFaculty && exp.createdBy === user?._id)) && (
                       <div className="experiment-actions" onClick={(e) => e.stopPropagation()}>
-                        <button
-                          className="experiment-action-btn edit-btn"
-                          onClick={() => navigate(`/experiment/${exp._id}/edit`)}
-                          title="Edit Experiment"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                          </svg>
-                        </button>
+                        {(isAdmin || exp.createdBy === user?._id) && (
+                          <button
+                            className="experiment-action-btn edit-btn"
+                            onClick={() => navigate(`/experiment/${exp._id}/edit`)}
+                            title="Edit Experiment"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                            </svg>
+                          </button>
+                        )}
                         <button
                           className="experiment-action-btn delete-btn"
                           onClick={() => handleDeleteExperiment(exp._id)}
@@ -705,6 +753,18 @@ const Dashboard = () => {
 
       {/* AI Chat Widget - Floating Chat Assistant */}
       <AIChatWidget />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={deleteModal.isOpen}
+        title="Delete Experiment"
+        message={`Are you sure you want to delete "${deleteModal.experimentTitle}"? This action cannot be undone.`}
+        onConfirm={confirmDeleteExperiment}
+        onCancel={() => setDeleteModal({ isOpen: false, experimentId: null, experimentTitle: '' })}
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDangerous={true}
+      />
     </div>
   );
 };

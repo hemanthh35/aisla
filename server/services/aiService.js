@@ -5,7 +5,7 @@
  */
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
-const TEXT_MODEL = process.env.OLLAMA_MODEL || 'gemma3:4b';
+const TEXT_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';
 const VISION_MODEL = 'llava:latest';
 
 /**
@@ -447,11 +447,374 @@ export async function extractTextFromImage(imageBase64) {
     }
 }
 
+/**
+ * Generate diagram code from text description
+ */
+export async function generateDiagram(description, format = 'mermaid') {
+    console.log(`📊 [AI] Generating ${format} diagram`);
+
+    // Build format-specific prompt
+    let formatPrompt = '';
+
+    if (format === 'mermaid') {
+        formatPrompt = `OUTPUT FORMAT: MERMAID.JS
+
+STRICT SYNTAX RULES:
+1. Start with diagram type: flowchart TD, flowchart LR, sequenceDiagram, classDiagram, etc.
+2. Every node needs an ID and label: A[Label] or B{Decision} or C((Circle))
+3. Arrows: --> or --- with optional text |like this|
+4. NO spaces in node IDs. Use camelCase or single letters.
+5. NO style commands. NO fillcolor. NO shape=. Keep it simple.
+
+VALID EXAMPLE:
+flowchart LR
+    A[Battery 9V] --> B[Switch]
+    B --> C[Resistor 220Ω]
+    C --> D[LED]
+    D --> E[Ground]
+
+SEQUENCE DIAGRAM EXAMPLE:
+sequenceDiagram
+    Client->>Server: Request
+    Server->>Database: Query
+    Database-->>Server: Results
+    Server-->>Client: Response`;
+    } else if (format === 'graphviz') {
+        formatPrompt = `OUTPUT FORMAT: GRAPHVIZ DOT
+
+YOU MUST USE DOT SYNTAX. DO NOT USE MERMAID.
+
+SYNTAX:
+digraph NAME {
+    rankdir=LR;
+    node [shape=box];
+    A -> B -> C;
+}
+
+CIRCUIT EXAMPLE:
+digraph Circuit {
+    rankdir=LR;
+    node [shape=box, style=rounded];
+    
+    Battery [label="Battery\\n9V"];
+    R1 [label="R1\\n220Ω"];
+    LED [label="LED"];
+    GND [label="Ground"];
+    
+    Battery -> R1 -> LED -> GND;
+}
+
+FLOWCHART EXAMPLE:
+digraph Process {
+    rankdir=TB;
+    node [shape=box];
+    
+    Start [shape=ellipse];
+    End [shape=ellipse];
+    Decision [shape=diamond];
+    
+    Start -> Input -> Process -> Decision;
+    Decision -> Output [label="Yes"];
+    Decision -> Process [label="No"];
+    Output -> End;
+}`;
+    } else if (format === 'plantuml') {
+        formatPrompt = `OUTPUT FORMAT: PLANTUML
+
+ALWAYS start with @startuml and end with @enduml
+
+SEQUENCE EXAMPLE:
+@startuml
+actor User
+participant "Login" as L
+database "DB" as D
+
+User -> L: Enter credentials
+L -> D: Validate
+D --> L: Result
+L --> User: Response
+@enduml
+
+CLASS DIAGRAM:
+@startuml
+class User {
+    +name: String
+    +email: String
+    +login()
+}
+class Order {
+    +id: int
+    +total: float
+}
+User --> Order
+@enduml`;
+    } else if (format === 'd2') {
+        formatPrompt = `OUTPUT FORMAT: D2
+
+Simple arrow syntax with labels.
+
+EXAMPLE:
+Battery -> Switch: power
+Switch -> Resistor: current
+Resistor -> LED: current  
+LED -> Ground
+
+FLOWCHART:
+Start -> Process -> Decision
+Decision -> End: yes
+Decision -> Process: no`;
+    }
+
+    const systemPrompt = `You are a diagram code generator. Generate ONLY valid ${format.toUpperCase()} code.
+
+${formatPrompt}
+
+CRITICAL RULES:
+1. Output ONLY the diagram code - no explanations, no markdown, no code blocks
+2. Use the EXACT format specified above
+3. Keep it simple and syntactically correct
+4. For circuits: show components in current flow order
+
+User wants: ${description}
+
+Generate the ${format} code now:`;
+
+    const result = await callOllama(TEXT_MODEL, systemPrompt, '', {
+        temperature: 0.2,
+        maxTokens: 1500
+    });
+
+    if (!result.success) {
+        return { success: false, error: result.error };
+    }
+
+    // Clean the response
+    let diagramCode = result.text
+        .replace(/```[\w]*\n?/gi, '')
+        .replace(/```/g, '')
+        .replace(/^Here['']?s.*:\n?/gim, '')
+        .replace(/^The .*code.*:\n?/gim, '')
+        .trim();
+
+    // Basic validation
+    if (format === 'mermaid' && !diagramCode.match(/^(flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|pie|gantt)/m)) {
+        // Try to fix by adding flowchart header
+        if (diagramCode.includes('-->') || diagramCode.includes('->')) {
+            diagramCode = 'flowchart TD\n    ' + diagramCode.split('\n').join('\n    ');
+        }
+    }
+
+    if (format === 'plantuml' && !diagramCode.includes('@startuml')) {
+        diagramCode = '@startuml\n' + diagramCode + '\n@enduml';
+    }
+
+    if (format === 'graphviz' && !diagramCode.includes('digraph') && !diagramCode.includes('graph')) {
+        diagramCode = 'digraph G {\n    rankdir=LR;\n    ' + diagramCode.split('\n').join('\n    ') + '\n}';
+    }
+
+    return { success: true, code: diagramCode, format };
+}
+
+/**
+ * Generate test cases for a coding problem
+ */
+export async function generateTestCases(problemStatement, language = 'python') {
+    console.log(`🧪 [AI] Generating test cases for ${language}`);
+
+    const prompt = `Generate 5 test cases for this coding problem:
+
+${problemStatement}
+
+Return a JSON array with this format:
+[
+    {"input": "test input 1", "expectedOutput": "expected output 1", "description": "what this tests"},
+    {"input": "test input 2", "expectedOutput": "expected output 2", "description": "what this tests"}
+]
+
+Include:
+- Edge cases (empty input, single element, etc.)
+- Normal cases
+- Large input case
+
+Return ONLY the JSON array, no explanations.`;
+
+    const result = await callOllama(TEXT_MODEL, prompt, 'You are a test case generator. Return only valid JSON.', { maxTokens: 800 });
+
+    if (!result.success) {
+        return { success: false, error: result.error, testCases: [] };
+    }
+
+    const testCases = parseJSON(result.text);
+
+    if (!testCases || !Array.isArray(testCases)) {
+        // Fallback test cases
+        return {
+            success: true,
+            testCases: [
+                { input: "[]", expectedOutput: "[]", description: "Empty input" },
+                { input: "[1]", expectedOutput: "[1]", description: "Single element" },
+                { input: "[1,2,3]", expectedOutput: "[1,2,3]", description: "Normal case" }
+            ]
+        };
+    }
+
+    return { success: true, testCases };
+}
+
+/**
+ * Stream code suggestions (hints without direct answers)
+ */
+export async function streamCodeSuggestion(res, problemStatement, code, language = 'python') {
+    console.log(`💡 [AI] Streaming code suggestion for ${language}`);
+
+    const systemPrompt = `You are a helpful coding tutor. Provide hints and guidance WITHOUT giving direct code answers.
+- Point out logical issues or edge cases
+- Suggest algorithmic approaches
+- Ask guiding questions
+- Encourage the student to think through the problem
+Do NOT write the solution code for them.`;
+
+    const userPrompt = `Problem: ${problemStatement}
+
+Student's current code (${language}):
+\`\`\`${language}
+${code}
+\`\`\`
+
+Provide helpful hints and suggestions to guide them toward the solution.`;
+
+    // Helper to send SSE
+    const sendSSE = (data) => {
+        res.write(`data: ${JSON.stringify(data)}\n\n`);
+        if (res.flush) res.flush();
+    };
+
+    try {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache, no-transform');
+        res.setHeader('Connection', 'keep-alive');
+        res.setHeader('X-Accel-Buffering', 'no');
+        res.flushHeaders();
+
+        sendSSE({ type: 'START', model: TEXT_MODEL });
+
+        const ollamaResponse = await fetch(`${OLLAMA_URL}/api/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: TEXT_MODEL,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: userPrompt }
+                ],
+                stream: true,
+                options: { temperature: 0.7, num_predict: 1000 }
+            })
+        });
+
+        if (!ollamaResponse.ok) {
+            throw new Error(`Ollama error: ${ollamaResponse.status}`);
+        }
+
+        const reader = ollamaResponse.body.getReader();
+        const decoder = new TextDecoder();
+        let tokenCount = 0;
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value, { stream: true });
+            const lines = chunk.split('\n').filter(l => l.trim());
+
+            for (const line of lines) {
+                try {
+                    const data = JSON.parse(line);
+                    if (data.message?.content) {
+                        tokenCount++;
+                        sendSSE({ type: 'TOKEN', content: data.message.content });
+                    }
+                    if (data.done === true) {
+                        sendSSE({ type: 'DONE', tokens: tokenCount });
+                    }
+                } catch (e) {
+                    continue;
+                }
+            }
+        }
+
+        res.end();
+    } catch (error) {
+        console.error('Stream code suggestion error:', error);
+        res.write(`data: ${JSON.stringify({ type: 'ERROR', error: error.message })}\n\n`);
+        res.end();
+    }
+}
+
+/**
+ * Analyze code complexity (Big-O notation)
+ */
+export async function analyzeCodeComplexity(code, language = 'python') {
+    console.log(`📊 [AI] Analyzing code complexity`);
+
+    const prompt = `Analyze this ${language} code and determine its time and space complexity:
+
+\`\`\`${language}
+${code}
+\`\`\`
+
+Return a JSON object:
+{
+    "timeComplexity": "O(n)",
+    "spaceComplexity": "O(1)",
+    "explanation": "Brief explanation of the analysis",
+    "bottleneck": "The operation that causes the complexity"
+}
+
+Return ONLY the JSON, no other text.`;
+
+    const result = await callOllama(TEXT_MODEL, prompt, 'You are an algorithm complexity analyzer. Return only valid JSON.', { maxTokens: 500 });
+
+    if (!result.success) {
+        return {
+            success: false,
+            timeComplexity: 'Unknown',
+            spaceComplexity: 'Unknown',
+            explanation: 'Failed to analyze: ' + result.error
+        };
+    }
+
+    const analysis = parseJSON(result.text);
+
+    if (!analysis) {
+        return {
+            success: true,
+            timeComplexity: 'O(n)',
+            spaceComplexity: 'O(1)',
+            explanation: 'Analysis could not be parsed. Please review manually.',
+            bottleneck: 'Unknown'
+        };
+    }
+
+    return {
+        success: true,
+        timeComplexity: analysis.timeComplexity || 'Unknown',
+        spaceComplexity: analysis.spaceComplexity || 'Unknown',
+        explanation: analysis.explanation || 'No explanation available',
+        bottleneck: analysis.bottleneck || 'Not identified'
+    };
+}
+
 export default {
     generateExperiment,
     generateExplanation,
     streamExplanation,
     generateQuiz,
     evaluateQuiz,
-    extractTextFromImage
+    extractTextFromImage,
+    generateDiagram,
+    generateTestCases,
+    streamCodeSuggestion,
+    analyzeCodeComplexity
 };
+

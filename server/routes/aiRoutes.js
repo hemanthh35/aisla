@@ -130,4 +130,133 @@ router.post('/evaluate', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/ai/generate-diagram
+ * Generate diagram code from text description (Admin only)
+ * 
+ * Body: { description: string, format: 'mermaid' | 'graphviz' | 'plantuml' | 'd2' }
+ */
+router.post('/generate-diagram', async (req, res) => {
+    try {
+        const { description, format } = req.body;
+
+        // Check if user is admin
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Admin access required' });
+        }
+
+        if (!description) {
+            return res.status(400).json({ message: 'Description is required' });
+        }
+
+        console.log(`📊 [API] Generate diagram request - format: ${format || 'mermaid'}`);
+
+        const result = await aiService.generateDiagram(description, format || 'mermaid');
+
+        if (!result.success) {
+            return res.status(500).json({
+                message: 'Diagram generation failed',
+                error: result.error
+            });
+        }
+
+        res.json({
+            success: true,
+            code: result.code,
+            format: result.format
+        });
+    } catch (error) {
+        console.error('Generate Diagram Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+/**
+ * POST /api/ai/code-suggestion-stream
+ * Stream code suggestions with real-time token streaming (SSE)
+ * Provides hints and guidance without giving direct code answers
+ * 
+ * Body: { problemStatement: string, code: string, language: string }
+ */
+router.post('/code-suggestion-stream', async (req, res) => {
+    try {
+        const { problemStatement, code, language } = req.body;
+
+        if (!problemStatement || !code) {
+            res.setHeader('Content-Type', 'text/event-stream');
+            res.write(`data: ${JSON.stringify({ type: 'ERROR', error: 'Problem statement and code are required' })}\n\n`);
+            res.end();
+            return;
+        }
+
+        console.log(`💡 [API] Code suggestion stream request - language: ${language}`);
+
+        // Call the streaming function
+        await aiService.streamCodeSuggestion(res, problemStatement, code, language || 'python');
+
+    } catch (error) {
+        console.error('Code Suggestion Stream Error:', error);
+        if (!res.headersSent) {
+            res.setHeader('Content-Type', 'text/event-stream');
+        }
+        res.write(`data: ${JSON.stringify({ type: 'ERROR', error: error.message })}\n\n`);
+        res.end();
+    }
+});
+
+/**
+ * POST /api/ai/analyze-complexity
+ * Analyze code complexity (Big-O notation)
+ * 
+ * Body: { code: string, language: string }
+ */
+router.post('/analyze-complexity', async (req, res) => {
+    try {
+        const { code, language } = req.body;
+
+        if (!code) {
+            return res.status(400).json({ message: 'Code is required' });
+        }
+
+        console.log(`📊 [API] Complexity analysis request - language: ${language}`);
+
+        const result = await aiService.analyzeCodeComplexity(code, language || 'python');
+
+        res.json({
+            success: true,
+            ...result
+        });
+
+    } catch (error) {
+        console.error('Complexity Analysis Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
+/**
+ * POST /api/ai/generate-test-cases
+ * Generate test cases based on problem statement
+ * 
+ * Body: { problemStatement: string, language: string }
+ */
+router.post('/generate-test-cases', async (req, res) => {
+    try {
+        const { problemStatement, language } = req.body;
+
+        if (!problemStatement) {
+            return res.status(400).json({ message: 'Problem statement is required' });
+        }
+
+        console.log(`🧪 [API] Test case generation request`);
+
+        const result = await aiService.generateTestCases(problemStatement, language || 'python');
+
+        res.json(result);
+
+    } catch (error) {
+        console.error('Test Case Generation Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+});
+
 export default router;

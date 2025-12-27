@@ -86,11 +86,33 @@ const QuizPage = () => {
 
     if (loading) {
         return (
-            <div className="quiz-page loading-page">
-                <div className="loader-container">
-                    <div className="loader"></div>
-                    <p>Loading quiz...</p>
-                </div>
+            <div className="quiz-page">
+                <header className="quiz-header">
+                    <div className="header-info">
+                        <div className="skeleton skeleton-back"></div>
+                        <div>
+                            <div className="skeleton skeleton-title"></div>
+                            <div className="skeleton skeleton-subtitle"></div>
+                        </div>
+                    </div>
+                    <div className="quiz-progress">
+                        <div className="skeleton skeleton-progress"></div>
+                    </div>
+                </header>
+                <main className="quiz-main">
+                    <div className="question-card">
+                        <div className="skeleton-question-header">
+                            <div className="skeleton skeleton-type"></div>
+                            <div className="skeleton skeleton-number"></div>
+                        </div>
+                        <div className="skeleton skeleton-question-text"></div>
+                        <div className="skeleton-options">
+                            {[1, 2, 3, 4].map(i => (
+                                <div key={i} className="skeleton skeleton-option"></div>
+                            ))}
+                        </div>
+                    </div>
+                </main>
             </div>
         );
     }

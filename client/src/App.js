@@ -11,6 +11,8 @@ import ExperimentView from './pages/ExperimentView';
 import QuizPage from './pages/QuizPage';
 import ResultPage from './pages/ResultPage';
 import BadgeManagement from './pages/BadgeManagement';
+import DiagramGenerator from './pages/DiagramGenerator';
+import CodingGrounds from './pages/CodingGrounds';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -83,6 +85,26 @@ function App() {
               element={
                 <PrivateRoute>
                   <BadgeManagement />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Diagram Generator (Admin) */}
+            <Route
+              path="/diagram-generator"
+              element={
+                <PrivateRoute>
+                  <DiagramGenerator />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Coding Grounds - Online Code Editor */}
+            <Route
+              path="/coding-grounds"
+              element={
+                <PrivateRoute>
+                  <CodingGrounds />
                 </PrivateRoute>
               }
             />

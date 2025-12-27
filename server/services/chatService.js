@@ -122,6 +122,11 @@ export const streamChat = async (req, res, message, history = []) => {
                         fullResponse += token;
                         tokenCount++;
 
+                        // Debug log every 10th token
+                        if (tokenCount % 10 === 0 || tokenCount === 1) {
+                            console.log(`📤 [TOKEN ${tokenCount}]: "${token.substring(0, 20)}..."`);
+                        }
+
                         // Send token immediately to client
                         sendSSE(res, {
                             type: 'TOKEN',

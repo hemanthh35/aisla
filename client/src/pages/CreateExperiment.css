@@ -15,30 +15,33 @@
 .back-button {
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
     color: var(--neutral-400);
-    background: transparent;
-    border: none;
-    padding: 0;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
     margin-bottom: 1.5rem;
     transition: all 0.2s ease;
     text-decoration: none;
+    flex-shrink: 0;
 }
 
 .back-button svg {
-    width: 16px;
-    height: 16px;
+    width: 20px;
+    height: 20px;
     transition: transform 0.2s ease;
 }
 
 .back-button:hover {
-    color: var(--primary-400);
+    color: var(--neutral-100);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
 }
 
 .back-button:hover svg {
-    transform: translateX(-3px);
+    transform: translateX(-2px);
 }
 
 .create-title {

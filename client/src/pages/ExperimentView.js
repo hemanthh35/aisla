@@ -382,10 +382,30 @@ const ExperimentView = () => {
 
     if (loading) {
         return (
-            <div className="experiment-page loading-page">
-                <div className="loader-container">
-                    <div className="loader"></div>
-                    <p>Loading experiment...</p>
+            <div className="experiment-page">
+                <header className="experiment-header">
+                    <div className="header-left">
+                        <div className="skeleton skeleton-back"></div>
+                        <div className="experiment-info">
+                            <div className="skeleton skeleton-title"></div>
+                            <div className="skeleton skeleton-meta"></div>
+                        </div>
+                    </div>
+                </header>
+                <div className="experiment-layout">
+                    <nav className="section-nav">
+                        {[1, 2, 3, 4, 5, 6].map(i => (
+                            <div key={i} className="skeleton skeleton-nav-item"></div>
+                        ))}
+                    </nav>
+                    <main className="experiment-content">
+                        <div className="content-card">
+                            <div className="skeleton skeleton-section-title"></div>
+                            <div className="skeleton skeleton-text"></div>
+                            <div className="skeleton skeleton-text"></div>
+                            <div className="skeleton skeleton-text short"></div>
+                        </div>
+                    </main>
                 </div>
             </div>
         );
@@ -408,11 +428,10 @@ const ExperimentView = () => {
             {/* Header */}
             <header className="experiment-header">
                 <div className="header-left">
-                    <Link to="/dashboard" className="back-button">
+                    <Link to="/dashboard" className="back-button" title="Back to Dashboard">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M19 12H5M12 19l-7-7 7-7" />
                         </svg>
-                        Dashboard
                     </Link>
                     <div className="experiment-info">
                         <h1 className="experiment-title">{experiment?.title}</h1>

@@ -51,11 +51,22 @@ const ResultPage = () => {
 
     if (loading) {
         return (
-            <div className="result-page loading-page">
-                <div className="loader-container">
-                    <div className="loader"></div>
-                    <p>Loading results...</p>
-                </div>
+            <div className="result-page">
+                <header className="result-header">
+                    <div className="skeleton skeleton-back"></div>
+                    <div className="skeleton skeleton-title-lg"></div>
+                </header>
+                <main className="result-main">
+                    <div className="skeleton-score-card">
+                        <div className="skeleton skeleton-circle"></div>
+                        <div className="skeleton-score-info">
+                            <div className="skeleton skeleton-text lg"></div>
+                            <div className="skeleton skeleton-text"></div>
+                        </div>
+                    </div>
+                    <div className="skeleton skeleton-section"></div>
+                    <div className="skeleton skeleton-section short"></div>
+                </main>
             </div>
         );
     }
@@ -78,11 +89,10 @@ const ResultPage = () => {
         <div className="result-page">
             {/* Header */}
             <header className="result-header">
-                <Link to="/dashboard" className="back-button">
+                <Link to="/dashboard" className="back-button" title="Back to Dashboard">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                     </svg>
-                    Dashboard
                 </Link>
                 <h1 className="result-title">Quiz Results</h1>
             </header>

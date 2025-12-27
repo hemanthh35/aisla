@@ -153,7 +153,7 @@ const updateExperiment = async (req, res) => {
 
 // @desc    Delete experiment
 // @route   DELETE /api/experiment/:id
-// @access  Private (Faculty only - owner)
+// @access  Private (Faculty/Admin only - owner or admin)
 const deleteExperiment = async (req, res) => {
     try {
         const experiment = await Experiment.findById(req.params.id);
@@ -162,8 +162,11 @@ const deleteExperiment = async (req, res) => {
             return res.status(404).json({ message: 'Experiment not found' });
         }
 
-        // Check ownership
-        if (experiment.createdBy.toString() !== req.user._id.toString()) {
+        // Check if user is owner or admin
+        const isOwner = experiment.createdBy.toString() === req.user._id.toString();
+        const isAdmin = req.user.role === 'admin';
+
+        if (!isOwner && !isAdmin) {
             return res.status(403).json({ message: 'Not authorized to delete this experiment' });
         }
 

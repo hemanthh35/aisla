@@ -13,6 +13,9 @@ import ResultPage from './pages/ResultPage';
 import BadgeManagement from './pages/BadgeManagement';
 import DiagramGenerator from './pages/DiagramGenerator';
 import CodingGrounds from './pages/CodingGrounds';
+import AISettings from './pages/AISettings';
+import ChemistryLab from './pages/ChemistryLab';
+import ChemistryLabAR from './pages/ChemistryLabAR';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -105,6 +108,36 @@ function App() {
               element={
                 <PrivateRoute>
                   <CodingGrounds />
+                </PrivateRoute>
+              }
+            />
+
+            {/* AI Settings (Admin) */}
+            <Route
+              path="/ai-settings"
+              element={
+                <PrivateRoute>
+                  <AISettings />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Virtual Chemistry Lab */}
+            <Route
+              path="/chemistry-lab"
+              element={
+                <PrivateRoute>
+                  <ChemistryLab />
+                </PrivateRoute>
+              }
+            />
+
+            {/* AR Chemistry Lab */}
+            <Route
+              path="/chemistry-lab-ar"
+              element={
+                <PrivateRoute>
+                  <ChemistryLabAR />
                 </PrivateRoute>
               }
             />

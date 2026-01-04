@@ -45,6 +45,7 @@ const AIChatWidget = () => {
     const [input, setInput] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
     const [currentModel, setCurrentModel] = useState('');
+    const [currentProvider, setCurrentProvider] = useState('');
 
     // Refs
     const messagesEndRef = useRef(null);
@@ -151,6 +152,7 @@ const AIChatWidget = () => {
                         switch (data.type) {
                             case 'START':
                                 setCurrentModel(data.model);
+                                setCurrentProvider(data.provider || 'ollama');
                                 break;
 
                             case 'TOKEN':
@@ -173,6 +175,7 @@ const AIChatWidget = () => {
                                             ...msg,
                                             isStreaming: false,
                                             model: data.model,
+                                            provider: data.provider,
                                             tokens: data.totalTokens
                                         }
                                         : msg
@@ -278,6 +281,11 @@ const AIChatWidget = () => {
                                     <><span className="typing-dot" /> Generating...</>
                                 ) : (
                                     <><span className="online-dot" /> Online</>
+                                )}
+                                {currentProvider && (
+                                    <span className={`provider-badge ${currentProvider}`}>
+                                        {currentProvider === 'gemini' ? '✨ Gemini' : '🖥️ Ollama'}
+                                    </span>
                                 )}
                             </span>
                         </div>

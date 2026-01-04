@@ -1,6 +1,9 @@
 // Main server entry point for AISLA Backend
-import express from 'express';
+// Load environment variables FIRST - before any other imports
 import dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -11,13 +14,13 @@ import quizRoutes from './routes/quizRoutes.js';
 import badgeRoutes from './routes/badgeRoutes.js';
 import chatRoutes from './routes/chat.js';
 import aiRoutes from './routes/aiRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
+import reactionRoutes from './routes/reactionRoutes.js';
+import labExperimentRoutes from './routes/labExperimentRoutes.js';
 
 // ES module __dirname equivalent
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 
@@ -34,6 +37,9 @@ app.use('/api/quiz', quizRoutes);
 app.use('/api/badges', badgeRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/settings', settingsRoutes);
+app.use('/api/reactions', reactionRoutes);
+app.use('/api/lab-experiments', labExperimentRoutes);
 
 // Serve React static files in production
 if (process.env.NODE_ENV === 'production') {

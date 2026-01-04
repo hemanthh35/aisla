@@ -306,6 +306,8 @@ CRITICAL RULES:
 2. Start with diagram type: flowchart TD, sequenceDiagram, classDiagram, etc.
 3. Use proper Mermaid syntax
 4. NO style commands, NO fillcolor, NO shape= - keep it simple
+5. NEVER use 'end' as a node ID - use 'finish' or 'complete' instead (end is a reserved keyword)
+6. NEVER use reserved words as node IDs: end, graph, subgraph, style, class, default
 
 VALID SYNTAX PATTERNS:
 
@@ -316,7 +318,7 @@ flowchart LR
     Decision -->|Yes| Success[Success]
     Decision -->|No| Error[Error]
     Error --> Process
-    Success --> End([End])
+    Success --> Finish([Finish])
 
 SEQUENCE:
 sequenceDiagram
@@ -380,6 +382,9 @@ Output ONLY the Mermaid code, starting with the diagram type. No explanations.`;
         }
     }
 
+    // Sanitize Mermaid code to replace reserved keywords
+    code = sanitizeMermaidCode(code);
+
     return { success: true, code, format: 'mermaid' };
 }
 
@@ -394,6 +399,44 @@ function cleanDiagramCode(text) {
         .replace(/^The .*code.*:\n?/gim, '')
         .replace(/^Output:\n?/gim, '')
         .trim();
+}
+
+/**
+ * Sanitize Mermaid code to replace reserved keywords
+ * Mermaid has reserved words like 'end', 'graph', 'subgraph', etc.
+ */
+function sanitizeMermaidCode(code) {
+    // Replace reserved word 'end' when used as a node ID
+    // Pattern: end[ or end( at word boundary, but not 'endif' or 'ender' etc.
+    let sanitized = code;
+
+    // Replace 'end[' with 'finish[' (node with brackets)
+    sanitized = sanitized.replace(/\bend\[/gi, 'finish[');
+
+    // Replace 'end(' with 'finish(' (node with parentheses)
+    sanitized = sanitized.replace(/\bend\(/gi, 'finish(');
+
+    // Replace standalone 'end' that's used as a flowchart node (not in 'endif', 'subgraph...end', etc.)
+    // Be careful not to replace 'end' keyword for subgraph closing
+    sanitized = sanitized.replace(/-->\s*end\s*$/gim, '--> finish');
+    sanitized = sanitized.replace(/-->\|[^|]*\|\s*end\s*$/gim, (match) => match.replace(/end\s*$/, 'finish'));
+
+    // Replace 'end' followed by arrow operator
+    sanitized = sanitized.replace(/\bend\s*-->/gi, 'finish -->');
+
+    // Replace common reserved words used as node IDs
+    const reservedReplacements = [
+        { pattern: /\bstart\[/gi, replacement: 'startNode[' },
+        { pattern: /\bgraph\[/gi, replacement: 'graphNode[' },
+        { pattern: /\bclass\[/gi, replacement: 'classNode[' },
+        { pattern: /\bdefault\[/gi, replacement: 'defaultNode[' },
+        { pattern: /\bstyle\[/gi, replacement: 'styleNode[' },
+    ];
+
+    // Only apply if NOT already using proper format
+    // (we want to keep 'Start([Start])' style nodes working)
+
+    return sanitized;
 }
 
 /**

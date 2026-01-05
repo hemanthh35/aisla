@@ -1,5 +1,5 @@
 // WebAR Chemistry Lab - Augmented Reality Virtual Chemistry Lab
-// Uses WebXR for phone-based AR experience
+// Uses WebXR for phone-based AR experience with camera fallback
 
 import React, { useEffect, useRef, useState } from 'react';
 import * as BABYLON from '@babylonjs/core';
@@ -9,9 +9,11 @@ import './ChemistryLabAR.css';
 
 const ChemistryLabAR = () => {
     const canvasRef = useRef(null);
+    const videoRef = useRef(null);
     const engineRef = useRef(null);
     const sceneRef = useRef(null);
     const xrHelperRef = useRef(null);
+    const cameraRef = useRef(null);
 
     // State
     const [arSupported, setArSupported] = useState(null); // null = checking, true/false = result
@@ -32,6 +34,8 @@ const ChemistryLabAR = () => {
     const [isBurnerOn, setIsBurnerOn] = useState(false);
     const [surfaceDetected, setSurfaceDetected] = useState(false);
     const [placementIndicator, setPlacementIndicator] = useState(null);
+    const [useCameraFallback, setUseCameraFallback] = useState(false);
+    const [cameraReady, setCameraReady] = useState(false);
 
     // Refs for AR state
     const selectedChemicalRef = useRef(null);
@@ -588,9 +592,12 @@ const ChemistryLabAR = () => {
         if (metadata.contents.length >= 2) {
             try {
                 const ids = metadata.contents.map(c => c.id);
+                console.log('🔬 AR: Checking reaction for:', ids.join(' + '));
+
                 const result = await reactionsEngine.calculateReaction(ids, { isHeated: isBurnerOnRef.current });
 
                 if (result.success && result.reaction) {
+                    console.log('⚗️ AR: Reaction detected!', result.reaction);
                     setActiveReaction(result.reaction);
                     setShowEquation(true);
 
@@ -598,7 +605,14 @@ const ChemistryLabAR = () => {
                     if (metadata.liquid && result.reaction.resultColor) {
                         setTimeout(() => {
                             metadata.liquid.material.albedoColor = BABYLON.Color3.FromHexString(result.reaction.resultColor);
+                            // Scale up liquid to show reaction occurred
+                            metadata.liquid.scaling.y = Math.max(metadata.liquid.scaling.y, metadata.volume / metadata.maxVolume * 8);
                         }, 500);
+                    }
+
+                    // Show safety warning if present
+                    if (result.reaction.safetyWarnings && result.reaction.safetyWarnings.length > 0) {
+                        setSafetyWarning(`⚠️ ${result.reaction.safetyWarnings[0]}`);
                     }
 
                     // Show result
@@ -606,12 +620,31 @@ const ChemistryLabAR = () => {
                         setResultSummary({
                             equation: result.reaction.equation,
                             explanation: result.reaction.explanation,
-                            type: result.reaction.type
+                            type: result.reaction.type,
+                            safetyWarnings: result.reaction.safetyWarnings
                         });
                     }, 1000);
+                } else if (result.noReaction) {
+                    // EXPLICIT "No Reaction" feedback
+                    console.log('❌ AR: No reaction between:', ids.join(' + '));
+                    setSafetyWarning(`ℹ️ ${result.message || 'No reaction occurs.'}`);
+                    setResultSummary({
+                        equation: ids.join(' + ') + ' → No Reaction',
+                        explanation: result.message || 'These chemicals do not react under current conditions.',
+                        type: 'no_reaction'
+                    });
+                    setTimeout(() => setSafetyWarning(null), 4000);
+                } else if (result.error === 'requires_heat') {
+                    setSafetyWarning('🔥 Needs heat! Tap the burner.');
+                    setTimeout(() => setSafetyWarning(null), 4000);
+                } else if (result.error === 'dangerous_combination') {
+                    setSafetyWarning(result.warning);
+                    setTimeout(() => setSafetyWarning(null), 5000);
                 }
             } catch (e) {
-                console.log('Reaction check error:', e);
+                console.error('AR Reaction check error:', e);
+                setSafetyWarning('⚠️ Error checking reaction');
+                setTimeout(() => setSafetyWarning(null), 3000);
             }
         }
 
@@ -621,15 +654,198 @@ const ChemistryLabAR = () => {
 
     // Enter AR mode
     const enterAR = async () => {
+        // Check if we're on HTTPS (required for AR)
+        if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost') {
+            setSafetyWarning('⚠️ AR requires HTTPS! Use DevTunnels or ngrok.');
+            setTimeout(() => setSafetyWarning(null), 5000);
+            return;
+        }
+
         if (xrHelperRef.current) {
             try {
                 await xrHelperRef.current.baseExperience.enterXRAsync('immersive-ar', 'local-floor');
             } catch (e) {
                 console.error('Failed to enter AR:', e);
-                setSafetyWarning('Failed to enter AR mode');
-                setTimeout(() => setSafetyWarning(null), 3000);
+                let errorMsg = 'Failed to enter AR mode. ';
+                if (e.message?.includes('NotSupportedError')) {
+                    errorMsg += 'AR not supported on this device.';
+                } else if (e.message?.includes('SecurityError')) {
+                    errorMsg += 'HTTPS required for AR.';
+                } else {
+                    errorMsg += e.message || 'Unknown error.';
+                }
+                setSafetyWarning(errorMsg);
+                setTimeout(() => setSafetyWarning(null), 5000);
+            }
+        } else {
+            setSafetyWarning('AR not initialized. Try refreshing the page.');
+            setTimeout(() => setSafetyWarning(null), 3000);
+        }
+    };
+
+    // Camera fallback mode - works on all phones
+    const startCameraFallback = async () => {
+        try {
+            // Request camera access
+            const constraints = {
+                video: {
+                    facingMode: 'environment', // Back camera
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 }
+                }
+            };
+
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+            if (videoRef.current) {
+                videoRef.current.srcObject = stream;
+                await videoRef.current.play();
+            }
+
+            setUseCameraFallback(true);
+            setCameraReady(true);
+            setArSessionActive(true);
+
+            // Initialize the 3D scene with camera background
+            await initFallbackScene();
+
+            setSafetyWarning('📷 Camera mode active! Tap screen to place lab.');
+            setTimeout(() => setSafetyWarning(null), 3000);
+
+        } catch (e) {
+            console.error('Camera access denied:', e);
+            setSafetyWarning('❌ Camera access denied. Please allow camera permission.');
+            setTimeout(() => setSafetyWarning(null), 4000);
+        }
+    };
+
+    // Initialize fallback 3D scene
+    const initFallbackScene = async () => {
+        const scene = sceneRef.current;
+        if (!scene) {
+            console.error('Scene not initialized for fallback mode');
+            setSafetyWarning('❌ Failed to initialize scene');
+            setTimeout(() => setSafetyWarning(null), 3000);
+            return;
+        }
+
+        // Set transparent background to show camera video
+        scene.clearColor = new BABYLON.Color4(0, 0, 0, 0);
+
+        // Setup click handler for camera fallback mode
+        scene.onPointerDown = (evt, pickInfo) => {
+            if (pickInfo.hit && pickInfo.pickedMesh?.metadata?.isClickable) {
+                handleMeshClick(pickInfo.pickedMesh);
+            }
+        };
+
+        // Place lab automatically in center
+        try {
+            await placeLabAtIndicator(scene, new BABYLON.Vector3(0, -0.5, 2));
+            console.log('✅ Lab placed in camera fallback mode');
+        } catch (e) {
+            console.error('Failed to place lab:', e);
+            setSafetyWarning('❌ Failed to place lab');
+            setTimeout(() => setSafetyWarning(null), 3000);
+            return;
+        }
+
+        // Enable device orientation for gyroscope control
+        if (window.DeviceOrientationEvent) {
+            // Request permission on iOS 13+
+            if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+                try {
+                    const permission = await DeviceOrientationEvent.requestPermission();
+                    if (permission === 'granted') {
+                        window.addEventListener('deviceorientation', handleDeviceOrientation);
+                    }
+                } catch (e) {
+                    console.log('Gyroscope permission denied');
+                }
+            } else {
+                window.addEventListener('deviceorientation', handleDeviceOrientation);
             }
         }
+
+        // Add touch controls for rotation/zoom
+        setupTouchControls();
+    };
+
+    // Handle device orientation for gyroscope
+    const handleDeviceOrientation = (event) => {
+        const camera = cameraRef.current;
+        if (!camera || !labAnchorRef.current) return;
+
+        const alpha = event.alpha || 0; // Z-axis rotation
+        const beta = event.beta || 0;   // X-axis rotation
+        const gamma = event.gamma || 0; // Y-axis rotation
+
+        // Subtle rotation based on device tilt
+        labAnchorRef.current.rotation.y = (alpha * Math.PI / 180) * 0.1;
+        labAnchorRef.current.rotation.x = ((beta - 90) * Math.PI / 180) * 0.05;
+    };
+
+    // Touch controls for the lab
+    const setupTouchControls = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+
+        let lastTouchX = 0;
+        let lastTouchY = 0;
+        let pinchDistance = 0;
+
+        canvas.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 1) {
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                // Pinch zoom
+                pinchDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+            }
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            if (!labAnchorRef.current) return;
+
+            if (e.touches.length === 1) {
+                // Rotate lab
+                const deltaX = e.touches[0].clientX - lastTouchX;
+                const deltaY = e.touches[0].clientY - lastTouchY;
+
+                labAnchorRef.current.rotation.y += deltaX * 0.01;
+                labAnchorRef.current.rotation.x += deltaY * 0.005;
+
+                lastTouchX = e.touches[0].clientX;
+                lastTouchY = e.touches[0].clientY;
+            } else if (e.touches.length === 2) {
+                // Pinch to scale
+                const newDistance = Math.hypot(
+                    e.touches[0].clientX - e.touches[1].clientX,
+                    e.touches[0].clientY - e.touches[1].clientY
+                );
+
+                const scale = newDistance / pinchDistance;
+                const newScale = Math.max(0.2, Math.min(1, labAnchorRef.current.scaling.x * scale));
+                labAnchorRef.current.scaling = new BABYLON.Vector3(newScale, newScale, newScale);
+
+                pinchDistance = newDistance;
+            }
+        });
+    };
+
+    // Stop camera
+    const stopCamera = () => {
+        if (videoRef.current?.srcObject) {
+            videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+            videoRef.current.srcObject = null;
+        }
+        setUseCameraFallback(false);
+        setCameraReady(false);
+        setArSessionActive(false);
+        window.removeEventListener('deviceorientation', handleDeviceOrientation);
     };
 
     // Reset lab
@@ -746,8 +962,19 @@ const ChemistryLabAR = () => {
 
     return (
         <div className="ar-lab">
+            {/* Camera Video Background (fallback mode) */}
+            {useCameraFallback && (
+                <video
+                    ref={videoRef}
+                    className="camera-background"
+                    playsInline
+                    muted
+                    autoPlay
+                />
+            )}
+
             {/* AR Canvas */}
-            <canvas ref={canvasRef} className="ar-canvas" />
+            <canvas ref={canvasRef} className={`ar-canvas ${useCameraFallback ? 'transparent' : ''}`} />
 
             {/* Safety Warning */}
             {safetyWarning && (
@@ -773,17 +1000,35 @@ const ChemistryLabAR = () => {
                 </div>
             )}
 
-            {/* Enter AR Button */}
+            {/* Enter AR / Camera Mode Button */}
             {!arSessionActive && (
                 <div className="ar-enter-overlay">
                     <div className="ar-enter-content">
                         <div className="ar-icon">🔬</div>
                         <h2>AR Chemistry Lab</h2>
                         <p>Experience chemistry in augmented reality</p>
-                        <button className="enter-ar-btn" onClick={enterAR}>
+
+                        {/* WebXR AR Button - only if supported */}
+                        {arSupported && (
+                            <button className="enter-ar-btn" onClick={enterAR}>
+                                <span className="ar-camera-icon">🥽</span>
+                                Enter Full AR Mode
+                            </button>
+                        )}
+
+                        {/* Camera Fallback - always available */}
+                        <button className="enter-ar-btn camera-mode" onClick={startCameraFallback}>
                             <span className="ar-camera-icon">📷</span>
-                            Enter AR Mode
+                            {arSupported ? 'Use Camera Mode' : 'Start Camera Mode'}
                         </button>
+
+                        {!arSupported && (
+                            <p className="ar-notice">
+                                Full AR not supported on this device.<br />
+                                Camera mode works on all phones!
+                            </p>
+                        )}
+
                         <a href="/chemistry-lab" className="fallback-link">
                             Or use standard 3D lab
                         </a>
@@ -931,14 +1176,28 @@ const ChemistryLabAR = () => {
 
             {/* Result Summary Modal */}
             {resultSummary && (
-                <div className="ar-result-modal">
+                <div className={`ar-result-modal ${resultSummary.type === 'no_reaction' ? 'no-reaction' : ''}`}>
                     <div className="result-content">
                         <button className="close-btn" onClick={() => setResultSummary(null)}>✕</button>
-                        <div className="result-icon">🧪</div>
-                        <h2>Reaction Complete!</h2>
+                        <div className="result-icon">
+                            {resultSummary.type === 'no_reaction' ? '🔬' : '⚗️'}
+                        </div>
+                        <h2>{resultSummary.type === 'no_reaction' ? 'No Reaction' : 'Reaction Complete!'}</h2>
                         <div className="result-equation">{resultSummary.equation}</div>
                         <p className="result-explanation">{resultSummary.explanation}</p>
-                        <div className="result-type">Type: {resultSummary.type}</div>
+                        {resultSummary.type !== 'no_reaction' && (
+                            <div className="result-type">Type: {resultSummary.type?.replace('_', ' ')}</div>
+                        )}
+                        {resultSummary.safetyWarnings && resultSummary.safetyWarnings.length > 0 && (
+                            <div className="result-safety">
+                                <strong>⚠️ Safety:</strong>
+                                <ul>
+                                    {resultSummary.safetyWarnings.map((w, i) => (
+                                        <li key={i}>{w}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                         <button className="continue-btn" onClick={() => setResultSummary(null)}>
                             Continue
                         </button>

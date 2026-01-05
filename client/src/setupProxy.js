@@ -8,11 +8,16 @@
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function (app) {
+    // Use environment variable or default to localhost
+    const apiTarget = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
+    console.log('📡 Proxy target:', apiTarget);
+
     // Proxy API requests
     app.use(
         '/api',
         createProxyMiddleware({
-            target: 'http://localhost:5000',
+            target: apiTarget,
             changeOrigin: true,
             // Critical: Disable buffering for SSE streams
             onProxyRes: function (proxyRes, req, res) {

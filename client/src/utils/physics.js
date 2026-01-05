@@ -69,7 +69,28 @@ export function getParticleParams(effectType, intensity = 1) {
             maxSize: 0.02,
             speed: 0.3,
             lifetime: 2000,
-            color: '#ffffff',
+            particleColor: '#ffffff',
+            duration: 3000,
+            opacity: 0.6
+        },
+        bubbles_heat: {
+            count: 80,
+            minSize: 0.008,
+            maxSize: 0.025,
+            speed: 0.5,
+            lifetime: 2500,
+            particleColor: '#ffffee',
+            duration: 5000,
+            opacity: 0.7
+        },
+        heat: {
+            count: 30,
+            minSize: 0.01,
+            maxSize: 0.04,
+            speed: 0.4,
+            lifetime: 1500,
+            particleColor: '#ff6600',
+            duration: 4000,
             opacity: 0.6
         },
         steam: {
@@ -78,16 +99,18 @@ export function getParticleParams(effectType, intensity = 1) {
             maxSize: 0.08,
             speed: 0.2,
             lifetime: 3000,
-            color: '#ffffff',
+            particleColor: '#ffffff',
+            duration: 4000,
             opacity: 0.3
         },
         smoke: {
-            count: 40,
-            minSize: 0.05,
-            maxSize: 0.15,
+            count: 80,
+            minSize: 0.03,
+            maxSize: 0.1,
             speed: 0.15,
             lifetime: 4000,
-            color: '#888888',
+            particleColor: '#888888',
+            duration: 4000,
             opacity: 0.5
         },
         precipitate: {
@@ -96,8 +119,49 @@ export function getParticleParams(effectType, intensity = 1) {
             maxSize: 0.008,
             speed: 0.1,
             lifetime: 5000,
-            color: '#ffffff',
+            particleColor: '#ffffff',
+            duration: 5000,
             opacity: 0.9
+        },
+        color_change: {
+            count: 40,
+            minSize: 0.01,
+            maxSize: 0.03,
+            speed: 0.3,
+            lifetime: 2000,
+            particleColor: '#aabbff',
+            duration: 3000,
+            opacity: 0.6
+        },
+        gas: {
+            count: 60,
+            minSize: 0.015,
+            maxSize: 0.04,
+            speed: 0.4,
+            lifetime: 3000,
+            particleColor: '#aaddff',
+            duration: 4000,
+            opacity: 0.5
+        },
+        flame: {
+            count: 100,
+            minSize: 0.02,
+            maxSize: 0.06,
+            speed: 0.8,
+            lifetime: 1000,
+            particleColor: '#ff4400',
+            duration: 5000,
+            opacity: 0.8
+        },
+        glow: {
+            count: 30,
+            minSize: 0.02,
+            maxSize: 0.06,
+            speed: 0.2,
+            lifetime: 3000,
+            particleColor: '#aaffaa',
+            duration: 4000,
+            opacity: 0.6
         },
         sparks: {
             count: 20,
@@ -105,8 +169,19 @@ export function getParticleParams(effectType, intensity = 1) {
             maxSize: 0.02,
             speed: 0.8,
             lifetime: 500,
-            color: '#ffaa00',
+            particleColor: '#ffaa00',
+            duration: 2000,
             opacity: 1
+        },
+        gas_evolution: {
+            count: 70,
+            minSize: 0.01,
+            maxSize: 0.03,
+            speed: 0.5,
+            lifetime: 2500,
+            particleColor: '#ccefff',
+            duration: 4000,
+            opacity: 0.6
         }
     };
 

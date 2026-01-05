@@ -160,30 +160,58 @@ const ChemistryLab = () => {
             camera.wheelPrecision = 20;
             camera.panningSensibility = 100;
 
-            // Lighting
+            // Premium Lighting Setup
             const hemisphericLight = new BABYLON.HemisphericLight(
                 'hemiLight',
                 new BABYLON.Vector3(0, 1, 0),
                 scene
             );
-            hemisphericLight.intensity = 0.6;
-            hemisphericLight.groundColor = new BABYLON.Color3(0.2, 0.2, 0.3);
+            hemisphericLight.intensity = 0.7;
+            hemisphericLight.groundColor = new BABYLON.Color3(0.15, 0.18, 0.25);
+            hemisphericLight.specular = new BABYLON.Color3(0.3, 0.3, 0.4);
 
+            // Main spot light for shadows
             const spotLight = new BABYLON.SpotLight(
                 'spotLight',
-                new BABYLON.Vector3(0, 5, 0),
-                new BABYLON.Vector3(0, -1, 0),
-                Math.PI / 3,
-                2,
+                new BABYLON.Vector3(0, 6, 2),
+                new BABYLON.Vector3(0, -1, -0.2),
+                Math.PI / 2.5,
+                1.5,
                 scene
             );
-            spotLight.intensity = 0.8;
+            spotLight.intensity = 1.2;
             spotLight.diffuse = new BABYLON.Color3(1, 0.98, 0.95);
 
-            // Enable shadows
-            const shadowGenerator = new BABYLON.ShadowGenerator(1024, spotLight);
+            // Accent lights for premium effect
+            const accentLight1 = new BABYLON.PointLight(
+                'accentLight1',
+                new BABYLON.Vector3(-3, 2.5, 1),
+                scene
+            );
+            accentLight1.intensity = 0.4;
+            accentLight1.diffuse = new BABYLON.Color3(0.6, 0.7, 1); // Blue accent
+
+            const accentLight2 = new BABYLON.PointLight(
+                'accentLight2',
+                new BABYLON.Vector3(3, 2.5, 1),
+                scene
+            );
+            accentLight2.intensity = 0.3;
+            accentLight2.diffuse = new BABYLON.Color3(1, 0.9, 0.7); // Warm accent
+
+            // Create environment texture for realistic reflections
+            const envTexture = BABYLON.CubeTexture.CreateFromPrefilteredData(
+                'https://assets.babylonjs.com/environments/environmentSpecular.env',
+                scene
+            );
+            scene.environmentTexture = envTexture;
+            scene.environmentIntensity = 0.8;
+
+            // Enable shadows with high quality
+            const shadowGenerator = new BABYLON.ShadowGenerator(2048, spotLight);
             shadowGenerator.useBlurExponentialShadowMap = true;
-            shadowGenerator.blurKernel = 32;
+            shadowGenerator.blurKernel = 64;
+            shadowGenerator.setDarkness(0.3);
 
             // Create lab environment
             await createLabEnvironment(scene, shadowGenerator);
@@ -236,6 +264,8 @@ const ChemistryLab = () => {
                 if (metadata.contents.length >= 2) {
                     try {
                         const chemicalIds = metadata.contents.map(c => c.id);
+                        console.log('🔬 Checking reaction for:', chemicalIds.join(' + '));
+
                         const result = await reactionsEngine.calculateReaction(chemicalIds, { isHeated: isBurnerOnRef.current });
 
                         if (result.success && result.reaction) {
@@ -243,24 +273,58 @@ const ChemistryLab = () => {
                             setActiveReaction(result.reaction);
                             setShowEquation(true);
 
-                            // Update color to result
+                            // Trigger visual particle effect
+                            const scn = sceneRef.current;
+                            if (scn) {
+                                createReactionEffect(scn, containerMesh.position, result.reaction.visualEffect, result.reaction.resultColor);
+                            }
+
+                            // Update liquid color to result
                             if (metadata.liquid && result.reaction.resultColor) {
                                 setTimeout(() => {
                                     metadata.liquid.material.albedoColor = BABYLON.Color3.FromHexString(result.reaction.resultColor);
+                                    // Also scale up liquid to show reaction occurred
+                                    metadata.liquid.scaling.y = Math.max(metadata.liquid.scaling.y, metadata.volume / metadata.maxVolume * 12);
                                 }, 500);
                             }
 
-                            // Show result
+                            // Show safety warnings if present
+                            if (result.reaction.safetyWarnings && result.reaction.safetyWarnings.length > 0) {
+                                setSafetyWarning(`⚠️ ${result.reaction.safetyWarnings[0]}`);
+                            }
+
+                            // Show result summary
                             setTimeout(() => {
                                 setResultSummary({
                                     equation: result.reaction.equation,
                                     explanation: result.reaction.explanation,
-                                    type: result.reaction.type
+                                    type: result.reaction.type,
+                                    safetyWarnings: result.reaction.safetyWarnings
                                 });
                             }, 1000);
+                        } else if (result.noReaction) {
+                            // EXPLICIT "No Reaction" feedback
+                            console.log('❌ No reaction between:', chemicalIds.join(' + '));
+                            setSafetyWarning(`ℹ️ ${result.message || 'No reaction occurs between these chemicals.'}`);
+                            setResultSummary({
+                                equation: chemicalIds.join(' + ') + ' → No Reaction',
+                                explanation: result.message || 'These chemicals do not react with each other under current conditions. Try different combinations or add heat.',
+                                type: 'no_reaction'
+                            });
+                            setTimeout(() => setSafetyWarning(null), 4000);
+                        } else if (result.error === 'requires_heat') {
+                            // Need to heat the mixture
+                            setSafetyWarning('🔥 This reaction requires heat! Turn on the Bunsen burner.');
+                            setTimeout(() => setSafetyWarning(null), 4000);
+                        } else if (result.error === 'dangerous_combination') {
+                            // Already handled in safety check, but show again
+                            setSafetyWarning(result.warning);
+                            setTimeout(() => setSafetyWarning(null), 5000);
                         }
                     } catch (e) {
-                        console.log('Reaction check skipped:', e);
+                        console.error('Reaction check error:', e);
+                        setSafetyWarning('⚠️ Error checking reaction. Please try again.');
+                        setTimeout(() => setSafetyWarning(null), 3000);
                     }
                 }
 
@@ -386,18 +450,34 @@ const ChemistryLab = () => {
         floor.material = floorMaterial;
         floor.receiveShadows = true;
 
-        // Lab table
-        const tableTop = BABYLON.MeshBuilder.CreateBox('tableTop', { width: 6, height: 0.1, depth: 3 }, scene);
+        // Premium Lab Bench
+        // White ceramic/resin lab bench top
+        const tableTop = BABYLON.MeshBuilder.CreateBox('tableTop', { width: 6, height: 0.08, depth: 3 }, scene);
         tableTop.position.y = 1;
         const tableMaterial = new BABYLON.PBRMaterial('tableMat', scene);
-        tableMaterial.albedoColor = new BABYLON.Color3(0.2, 0.15, 0.1);
-        tableMaterial.metallic = 0.1;
-        tableMaterial.roughness = 0.8;
+        tableMaterial.albedoColor = new BABYLON.Color3(0.95, 0.95, 0.97); // White lab bench
+        tableMaterial.metallic = 0.05;
+        tableMaterial.roughness = 0.2;
         tableTop.material = tableMaterial;
         tableTop.receiveShadows = true;
         shadowGenerator.addShadowCaster(tableTop);
 
-        // Table legs
+        // Black rubber edge
+        const tableEdge = BABYLON.MeshBuilder.CreateBox('tableEdge', { width: 6.1, height: 0.04, depth: 0.05 }, scene);
+        tableEdge.position = new BABYLON.Vector3(0, 1.02, 1.5);
+        const edgeMaterial = new BABYLON.PBRMaterial('edgeMat', scene);
+        edgeMaterial.albedoColor = new BABYLON.Color3(0.1, 0.1, 0.12);
+        edgeMaterial.metallic = 0;
+        edgeMaterial.roughness = 0.9;
+        tableEdge.material = edgeMaterial;
+
+        // Metal frame underneath
+        const frameMaterial = new BABYLON.PBRMaterial('frameMat', scene);
+        frameMaterial.albedoColor = new BABYLON.Color3(0.6, 0.62, 0.65);
+        frameMaterial.metallic = 0.9;
+        frameMaterial.roughness = 0.4;
+
+        // Table legs (metal)
         const legPositions = [
             { x: -2.8, z: -1.3 },
             { x: 2.8, z: -1.3 },
@@ -406,11 +486,21 @@ const ChemistryLab = () => {
         ];
 
         legPositions.forEach((pos, i) => {
-            const leg = BABYLON.MeshBuilder.CreateCylinder(`leg${i}`, { height: 1, diameter: 0.1 }, scene);
+            const leg = BABYLON.MeshBuilder.CreateCylinder(`leg${i}`, { height: 0.95, diameter: 0.06 }, scene);
             leg.position = new BABYLON.Vector3(pos.x, 0.5, pos.z);
-            leg.material = tableMaterial;
+            leg.material = frameMaterial;
             shadowGenerator.addShadowCaster(leg);
+
+            // Foot pads
+            const foot = BABYLON.MeshBuilder.CreateCylinder(`foot${i}`, { height: 0.02, diameter: 0.1 }, scene);
+            foot.position = new BABYLON.Vector3(pos.x, 0.02, pos.z);
+            foot.material = edgeMaterial;
         });
+
+        // Cross beam support
+        const beam = BABYLON.MeshBuilder.CreateBox('beam', { width: 5.6, height: 0.04, depth: 0.04 }, scene);
+        beam.position = new BABYLON.Vector3(0, 0.5, 0);
+        beam.material = frameMaterial;
 
         // Back wall with shelves
         const backWall = BABYLON.MeshBuilder.CreateBox('backWall', { width: 8, height: 4, depth: 0.2 }, scene);
@@ -427,18 +517,79 @@ const ChemistryLab = () => {
         shelf.material = tableMaterial;
         shadowGenerator.addShadowCaster(shelf);
 
-        // Chemical bottles on shelf (decorative)
+        // Chemical bottles on shelf (realistic reagent bottles)
+        const bottleColors = [
+            { body: '#8B4513', liquid: '#A0522D', label: 'HNO₃' },
+            { body: '#2E8B57', liquid: '#3CB371', label: 'CuSO₄' },
+            { body: '#4169E1', liquid: '#6495ED', label: 'NaCl' },
+            { body: '#DC143C', liquid: '#FF6B6B', label: 'HCl' },
+            { body: '#9932CC', liquid: '#BA55D3', label: 'KMnO₄' }
+        ];
+
         for (let i = 0; i < 5; i++) {
-            const bottle = BABYLON.MeshBuilder.CreateCylinder(`shelfBottle${i}`, { height: 0.4, diameter: 0.15 }, scene);
-            bottle.position = new BABYLON.Vector3(-2 + i * 1, 2.75, -2.7);
-            const bottleMat = new BABYLON.PBRMaterial(`bottleMat${i}`, scene);
-            const colors = ['#8B4513', '#2E8B57', '#4169E1', '#DC143C', '#9932CC'];
-            const color = BABYLON.Color3.FromHexString(colors[i]);
-            bottleMat.albedoColor = color;
-            bottleMat.metallic = 0.1;
-            bottleMat.roughness = 0.3;
-            bottleMat.alpha = 0.8;
-            bottle.material = bottleMat;
+            // Bottle body
+            const bottleBody = BABYLON.MeshBuilder.CreateCylinder(`shelfBottle${i}`, {
+                height: 0.35,
+                diameterTop: 0.12,
+                diameterBottom: 0.14,
+                tessellation: 24
+            }, scene);
+            bottleBody.position = new BABYLON.Vector3(-2 + i * 1, 2.73, -2.7);
+
+            // Bottle neck
+            const bottleNeck = BABYLON.MeshBuilder.CreateCylinder(`bottleNeck${i}`, {
+                height: 0.12,
+                diameterTop: 0.05,
+                diameterBottom: 0.08,
+                tessellation: 16
+            }, scene);
+            bottleNeck.position = new BABYLON.Vector3(-2 + i * 1, 2.96, -2.7);
+
+            // Bottle cap
+            const bottleCap = BABYLON.MeshBuilder.CreateCylinder(`bottleCap${i}`, {
+                height: 0.04,
+                diameter: 0.06,
+                tessellation: 16
+            }, scene);
+            bottleCap.position = new BABYLON.Vector3(-2 + i * 1, 3.04, -2.7);
+
+            // Glass material with proper reflections
+            const glassMat = new BABYLON.PBRMaterial(`bottleGlass${i}`, scene);
+            glassMat.albedoColor = BABYLON.Color3.FromHexString(bottleColors[i].body);
+            glassMat.metallic = 0.05;
+            glassMat.roughness = 0.1;
+            glassMat.alpha = 0.85;
+            glassMat.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
+            glassMat.indexOfRefraction = 1.5;
+            glassMat.subSurface.isRefractionEnabled = true;
+            glassMat.subSurface.refractionIntensity = 0.6;
+            glassMat.environmentIntensity = 0.8;
+            bottleBody.material = glassMat;
+            bottleNeck.material = glassMat;
+
+            // Cap material
+            const capMat = new BABYLON.PBRMaterial(`bottleCap${i}Mat`, scene);
+            capMat.albedoColor = new BABYLON.Color3(0.15, 0.15, 0.15);
+            capMat.metallic = 0.2;
+            capMat.roughness = 0.6;
+            bottleCap.material = capMat;
+
+            // Liquid inside bottle
+            const liquidInside = BABYLON.MeshBuilder.CreateCylinder(`bottleLiquid${i}`, {
+                height: 0.25,
+                diameter: 0.11,
+                tessellation: 16
+            }, scene);
+            liquidInside.position = new BABYLON.Vector3(-2 + i * 1, 2.68, -2.7);
+
+            const liquidMat = new BABYLON.PBRMaterial(`bottleLiquidMat${i}`, scene);
+            liquidMat.albedoColor = BABYLON.Color3.FromHexString(bottleColors[i].liquid);
+            liquidMat.metallic = 0;
+            liquidMat.roughness = 0.2;
+            liquidMat.alpha = 0.9;
+            liquidInside.material = liquidMat;
+
+            shadowGenerator.addShadowCaster(bottleBody);
         }
     };
 
@@ -473,55 +624,89 @@ const ChemistryLab = () => {
         return equipment;
     };
 
-    // Create a glass beaker
+    // Create a glass beaker - Premium Design
     const createBeaker = (scene, name, position, radius, shadowGenerator) => {
-        // Outer glass
-        const beaker = BABYLON.MeshBuilder.CreateCylinder(name, {
-            height: 0.4,
-            diameterTop: radius * 2,
-            diameterBottom: radius * 1.8,
-            tessellation: 32
+        // Create beaker body with proper shape
+        const beakerOuter = BABYLON.MeshBuilder.CreateCylinder(`${name}Outer`, {
+            height: 0.5,
+            diameterTop: radius * 2.2,
+            diameterBottom: radius * 1.9,
+            tessellation: 48
         }, scene);
-        beaker.position = position;
+        beakerOuter.position = position;
 
-        // Glass material with transparency
+        // Create spout detail
+        const spout = BABYLON.MeshBuilder.CreateCylinder(`${name}Spout`, {
+            height: 0.05,
+            diameterTop: radius * 2.25,
+            diameterBottom: radius * 2.2,
+            tessellation: 48
+        }, scene);
+        spout.position = new BABYLON.Vector3(position.x, position.y + 0.275, position.z);
+
+        // Premium glass material with proper optics
         const glassMaterial = new BABYLON.PBRMaterial(`${name}Glass`, scene);
-        glassMaterial.albedoColor = new BABYLON.Color3(0.9, 0.95, 1);
-        glassMaterial.metallic = 0.1;
-        glassMaterial.roughness = 0.05;
-        glassMaterial.alpha = 0.3;
+        glassMaterial.albedoColor = new BABYLON.Color3(0.92, 0.95, 0.98);
+        glassMaterial.metallic = 0.02;
+        glassMaterial.roughness = 0.02;
+        glassMaterial.alpha = 0.35;
         glassMaterial.transparencyMode = BABYLON.Material.MATERIAL_ALPHABLEND;
         glassMaterial.backFaceCulling = false;
-        beaker.material = glassMaterial;
-        shadowGenerator.addShadowCaster(beaker);
+        // Enable refraction for realistic glass
+        glassMaterial.subSurface.isRefractionEnabled = true;
+        glassMaterial.subSurface.refractionIntensity = 0.8;
+        glassMaterial.subSurface.indexOfRefraction = 1.52;
+        glassMaterial.subSurface.tintColor = new BABYLON.Color3(0.95, 0.98, 1);
+        glassMaterial.environmentIntensity = 1.2;
 
-        // Inner liquid placeholder
+        beakerOuter.material = glassMaterial;
+        spout.material = glassMaterial;
+        shadowGenerator.addShadowCaster(beakerOuter);
+
+        // Create graduation marks (lines on beaker)
+        for (let i = 1; i <= 4; i++) {
+            const mark = BABYLON.MeshBuilder.CreateTorus(`${name}Mark${i}`, {
+                diameter: radius * 2.05,
+                thickness: 0.003,
+                tessellation: 32
+            }, scene);
+            mark.position = new BABYLON.Vector3(position.x, position.y - 0.2 + i * 0.1, position.z);
+            const markMat = new BABYLON.StandardMaterial(`${name}MarkMat${i}`, scene);
+            markMat.emissiveColor = new BABYLON.Color3(0.6, 0.6, 0.65);
+            markMat.alpha = 0.6;
+            mark.material = markMat;
+        }
+
+        // Inner liquid surface
         const liquid = BABYLON.MeshBuilder.CreateCylinder(`${name}Liquid`, {
-            height: 0.01,
-            diameter: radius * 1.7,
-            tessellation: 32
+            height: 0.02,
+            diameter: radius * 1.85,
+            tessellation: 48
         }, scene);
-        liquid.position = new BABYLON.Vector3(position.x, position.y - 0.15, position.z);
+        liquid.position = new BABYLON.Vector3(position.x, position.y - 0.2, position.z);
         liquid.isVisible = false;
 
         const liquidMaterial = new BABYLON.PBRMaterial(`${name}LiquidMat`, scene);
-        liquidMaterial.albedoColor = new BABYLON.Color3(0.5, 0.7, 1);
+        liquidMaterial.albedoColor = new BABYLON.Color3(0.4, 0.6, 0.9);
         liquidMaterial.metallic = 0;
-        liquidMaterial.roughness = 0.1;
-        liquidMaterial.alpha = 0.8;
+        liquidMaterial.roughness = 0.05;
+        liquidMaterial.alpha = 0.85;
+        liquidMaterial.subSurface.isTranslucencyEnabled = true;
+        liquidMaterial.subSurface.translucencyIntensity = 0.5;
         liquid.material = liquidMaterial;
 
-        beaker.metadata = {
+        beakerOuter.metadata = {
             type: 'beaker',
             name: name,
             liquid: liquid,
+            spout: spout,
             contents: [],
             volume: 0,
             maxVolume: 250,
             isClickable: true
         };
 
-        return beaker;
+        return beakerOuter;
     };
 
     // Create test tube rack with tubes
@@ -1306,17 +1491,31 @@ const ChemistryLab = () => {
 
             {/* Result Summary */}
             {resultSummary && (
-                <div className="result-summary-modal">
+                <div className={`result-summary-modal ${resultSummary.type === 'no_reaction' ? 'no-reaction' : ''}`}>
                     <div className="result-summary-content">
                         <button className="close-modal" onClick={() => setResultSummary(null)}>×</button>
-                        <div className="result-icon">🧪</div>
-                        <h2>Reaction Complete!</h2>
+                        <div className="result-icon">
+                            {resultSummary.type === 'no_reaction' ? '🔬' : '⚗️'}
+                        </div>
+                        <h2>{resultSummary.type === 'no_reaction' ? 'No Reaction' : 'Reaction Complete!'}</h2>
                         <div className="result-equation">{resultSummary.equation}</div>
                         <div className="result-explanation">{resultSummary.explanation}</div>
-                        <div className="result-type">
-                            <span className="type-label">Reaction Type:</span>
-                            <span className="type-value">{resultSummary.type?.replace('_', ' ')}</span>
-                        </div>
+                        {resultSummary.type !== 'no_reaction' && (
+                            <div className="result-type">
+                                <span className="type-label">Reaction Type:</span>
+                                <span className="type-value">{resultSummary.type?.replace('_', ' ')}</span>
+                            </div>
+                        )}
+                        {resultSummary.safetyWarnings && resultSummary.safetyWarnings.length > 0 && (
+                            <div className="result-safety">
+                                <h4>⚠️ Safety Notes:</h4>
+                                <ul>
+                                    {resultSummary.safetyWarnings.map((warning, idx) => (
+                                        <li key={idx}>{warning}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
                         <button className="continue-btn" onClick={() => setResultSummary(null)}>
                             Continue Experimenting
                         </button>

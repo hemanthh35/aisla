@@ -739,6 +739,60 @@
     box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
 }
 
+/* No Reaction State */
+.result-summary-modal.no-reaction .result-summary-content {
+    background: linear-gradient(135deg, #1a1a1a, #2d2d3a);
+    border-color: rgba(156, 163, 175, 0.3);
+}
+
+.result-summary-modal.no-reaction h2 {
+    background: linear-gradient(135deg, #9ca3af, #6b7280);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.result-summary-modal.no-reaction .result-equation {
+    background: rgba(156, 163, 175, 0.1);
+    border-color: rgba(156, 163, 175, 0.3);
+    color: #9ca3af;
+}
+
+.result-summary-modal.no-reaction .continue-btn {
+    background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
+.result-summary-modal.no-reaction .continue-btn:hover {
+    box-shadow: 0 10px 30px rgba(107, 114, 128, 0.4);
+}
+
+/* Safety Warnings in Result */
+.result-safety {
+    margin: 20px 0;
+    padding: 16px 20px;
+    background: rgba(251, 191, 36, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    border-radius: 12px;
+    text-align: left;
+}
+
+.result-safety h4 {
+    color: #fbbf24;
+    font-size: 0.95rem;
+    margin-bottom: 12px;
+}
+
+.result-safety ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+.result-safety li {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.85rem;
+    line-height: 1.6;
+    margin-bottom: 4px;
+}
+
 /* Camera Controls Help */
 .camera-controls-help {
     position: absolute;

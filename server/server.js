@@ -78,10 +78,11 @@ app.use((err, req, res, next) => {
 // Start server
 const PORT = process.env.PORT || 5000;
 
-// Start server first, then connect to DB (non-blocking)
-app.listen(PORT, () => {
+// Start server on all interfaces (0.0.0.0) for network access
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🌐 Access at: http://localhost:${PORT}`);
+  console.log(`🌍 Network Access: http://0.0.0.0:${PORT}`);
 
   // Connect to MongoDB after server starts
   connectDB();

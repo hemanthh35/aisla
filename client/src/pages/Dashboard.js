@@ -74,10 +74,13 @@ const Dashboard = () => {
         const subs = expRes.data.submissions || [];
         stats = {
           experimentsCompleted: subs.length,
-          averageScore: subs.length > 0
-            ? Math.round(subs.reduce((a, s) => a + s.percentage, 0) / subs.length)
-            : 0
-        });
+          averageScore:
+            subs.length > 0
+              ? Math.round(
+                  subs.reduce((a, s) => a + s.percentage, 0) / subs.length
+                )
+              : 0,
+        };
       }
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -572,7 +575,14 @@ const Dashboard = () => {
             </Link>
 
             <Link to="/chemistry-lab-ar" className="sidebar-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
                 <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
                 <path d="m9 12 2 2 4-4" />
                 <path d="M12 2v2" />
@@ -869,7 +879,9 @@ const Dashboard = () => {
                         {new Date(exp.createdAt).toLocaleDateString()}
                       </span>
                       {exp.quizGenerated && (
-                        <span className="experiment-quiz-badge">Quiz Available</span>
+                        <span className="experiment-quiz-badge">
+                          Quiz Available
+                        </span>
                       )}
                     </div>
                     {(isAdmin ||

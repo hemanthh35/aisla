@@ -1,24 +1,25 @@
 // Main App component with routing and authentication context
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
-import Landing from './pages/Landing';
-import Register from './pages/Register';
-import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import CreateExperiment from './pages/CreateExperiment';
-import ExperimentView from './pages/ExperimentView';
-import QuizPage from './pages/QuizPage';
-import ResultPage from './pages/ResultPage';
-import BadgeManagement from './pages/BadgeManagement';
-import DiagramGenerator from './pages/DiagramGenerator';
-import CodingGrounds from './pages/CodingGrounds';
-import AISettings from './pages/AISettings';
-import ChemistryLab from './pages/ChemistryLab';
-import ChemistryLabAR from './pages/ChemistryLabAR';
-import ARChemistryLabCamera from './pages/ARChemistryLabCamera';
-import PrivateRoute from './components/PrivateRoute';
-import './App.css';
+import React from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import Landing from "./pages/Landing";
+import Register from "./pages/Register";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import CreateExperiment from "./pages/CreateExperiment";
+import ExperimentView from "./pages/ExperimentView";
+import QuizPage from "./pages/QuizPage";
+import ResultPage from "./pages/ResultPage";
+import BadgeManagement from "./pages/BadgeManagement";
+import DiagramGenerator from "./pages/DiagramGenerator";
+import CodingGrounds from "./pages/CodingGrounds";
+import AISettings from "./pages/AISettings";
+import ChemistryLab from "./pages/ChemistryLab";
+import ChemistryLabAR from "./pages/ChemistryLabAR";
+import ARChemistryLabCamera from "./pages/ARChemistryLabCamera";
+import PhysicsLab from "./pages/PhysicsLab";
+import PrivateRoute from "./components/PrivateRoute";
+import "./App.css";
 
 function App() {
   return (
@@ -149,6 +150,16 @@ function App() {
               element={
                 <PrivateRoute>
                   <ARChemistryLabCamera />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Virtual Physics Lab */}
+            <Route
+              path="/physics-lab"
+              element={
+                <PrivateRoute>
+                  <PhysicsLab />
                 </PrivateRoute>
               }
             />

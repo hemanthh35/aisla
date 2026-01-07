@@ -33,60 +33,92 @@
 /* ============================================
    TOGGLE BUTTON
    ============================================ */
+/* ============================================
+   TOGGLE BUTTON
+   ============================================ */
 .chat-toggle {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    border-radius: 16px;
+    /* Modern squircle shape */
     background: linear-gradient(135deg, var(--chat-primary), #8b5cf6);
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow:
-        0 4px 24px rgba(99, 102, 241, 0.35),
-        0 2px 8px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s, box-shadow 0.2s;
+        0 4px 20px rgba(99, 102, 241, 0.4),
+        0 8px 32px rgba(99, 102, 241, 0.2),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     position: relative;
+    z-index: 10;
 }
 
 .chat-toggle:hover {
-    transform: scale(1.05);
+    transform: translateY(-2px) scale(1.05);
     box-shadow:
-        0 6px 32px rgba(99, 102, 241, 0.45),
-        0 4px 12px rgba(0, 0, 0, 0.3);
+        0 8px 30px rgba(99, 102, 241, 0.5),
+        0 12px 40px rgba(99, 102, 241, 0.3),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.2);
 }
 
 .chat-toggle:active {
-    transform: scale(0.98);
+    transform: translateY(0) scale(0.95);
 }
 
 .chat-toggle svg {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
     color: white;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+    transition: transform 0.3s ease;
+}
+
+.chat-widget.open .chat-toggle svg {
+    transform: rotate(90deg);
+}
+
+/* Optional: Ripple/Glow effect behind */
+.chat-toggle::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, var(--chat-primary), #8b5cf6);
+    z-index: -1;
+    opacity: 0;
+    filter: blur(10px);
+    transition: opacity 0.3s ease;
+}
+
+.chat-toggle:hover::before {
+    opacity: 0.6;
 }
 
 .pulse {
     position: absolute;
-    inset: 0;
-    border-radius: 50%;
-    background: var(--chat-primary);
-    animation: pulse 2s ease-in-out infinite;
+    inset: -8px;
+    border-radius: 22px;
+    border: 2px solid var(--chat-primary);
+    opacity: 0;
+    animation: ripple 2s cubic-bezier(0, 0, 0.2, 1) infinite;
     pointer-events: none;
+    z-index: -1;
 }
 
-@keyframes pulse {
-
-    0%,
-    100% {
-        transform: scale(1);
-        opacity: 0.4;
+@keyframes ripple {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.5;
+        border-width: 2px;
     }
 
-    50% {
-        transform: scale(1.25);
+    100% {
+        transform: scale(1.5);
         opacity: 0;
+        border-width: 0;
     }
 }
 

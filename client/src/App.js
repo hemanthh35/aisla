@@ -16,6 +16,7 @@ import CodingGrounds from './pages/CodingGrounds';
 import AISettings from './pages/AISettings';
 import ChemistryLab from './pages/ChemistryLab';
 import ChemistryLabAR from './pages/ChemistryLabAR';
+import ARChemistryLabCamera from './pages/ARChemistryLabCamera';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -138,6 +139,16 @@ function App() {
               element={
                 <PrivateRoute>
                   <ChemistryLabAR />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Camera-Based AR Chemistry Lab */}
+            <Route
+              path="/ar-chemistry-camera"
+              element={
+                <PrivateRoute>
+                  <ARChemistryLabCamera />
                 </PrivateRoute>
               }
             />

@@ -36,6 +36,7 @@ const Dashboard = () => {
 
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   const fetchData = async () => {
@@ -61,22 +62,21 @@ const Dashboard = () => {
         setSubmissions(subRes.data.submissions || []);
       }
 
-      // Calculate stats
+      // Calculate stats (for future use)
+      // eslint-disable-next-line no-unused-vars
+      let stats = {};
       if (isFaculty) {
-        setStats({
+        stats = {
           totalExperiments: expRes.data.experiments?.length || 0,
           totalStudents: 0, // Would need separate endpoint
-        });
+        };
       } else {
         const subs = expRes.data.submissions || [];
-        setStats({
+        stats = {
           experimentsCompleted: subs.length,
-          averageScore:
-            subs.length > 0
-              ? Math.round(
-                  subs.reduce((a, s) => a + s.percentage, 0) / subs.length
-                )
-              : 0,
+          averageScore: subs.length > 0
+            ? Math.round(subs.reduce((a, s) => a + s.percentage, 0) / subs.length)
+            : 0
         });
       }
     } catch (error) {
@@ -572,14 +572,7 @@ const Dashboard = () => {
             </Link>
 
             <Link to="/chemistry-lab-ar" className="sidebar-link">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
                 <path d="m9 12 2 2 4-4" />
                 <path d="M12 2v2" />
@@ -605,29 +598,6 @@ const Dashboard = () => {
                 <path d="M12 9v.01" />
               </svg>
               AR Chem Camera
-            </Link>
-
-            {/* Physics Lab - Available to all users */}
-            <Link to="/physics-lab" className="sidebar-link">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path d="M12 2v4" />
-                <path d="M12 18v4" />
-                <path d="M4.93 4.93l2.83 2.83" />
-                <path d="M16.24 16.24l2.83 2.83" />
-                <path d="M2 12h4" />
-                <path d="M18 12h4" />
-                <path d="M4.93 19.07l2.83-2.83" />
-                <path d="M16.24 7.76l2.83-2.83" />
-              </svg>
-              Physics Lab ⚛️
             </Link>
           </div>
         </nav>
@@ -899,9 +869,7 @@ const Dashboard = () => {
                         {new Date(exp.createdAt).toLocaleDateString()}
                       </span>
                       {exp.quizGenerated && (
-                        <span className="experiment-quiz-badge">
-                          Quiz Available
-                        </span>
+                        <span className="experiment-quiz-badge">Quiz Available</span>
                       )}
                     </div>
                     {(isAdmin ||

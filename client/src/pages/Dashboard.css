@@ -796,154 +796,193 @@
 /* Experiments Grid */
 .experiments-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+    width: 100%;
 }
 
 .experiment-card {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.06);
-    border-radius: var(--radius-xl);
-    padding: 1.5rem;
+    border-radius: var(--radius-lg);
+    padding: 1rem;
+    /* Reduced padding */
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    position: relative;
+    overflow: hidden;
 }
 
 .experiment-card:hover {
-    background: rgba(255, 255, 255, 0.04);
-    border-color: rgba(99, 102, 241, 0.25);
-    transform: translateY(-4px);
-    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(99, 102, 241, 0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
 .experiment-card-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     justify-content: space-between;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem;
+    /* Reduced margin */
 }
 
 .experiment-icon {
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    /* Smaller icon */
+    height: 32px;
     background: rgba(99, 102, 241, 0.1);
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
 .experiment-icon svg {
-    width: 22px;
-    height: 22px;
+    width: 16px;
+    height: 16px;
     color: var(--primary-400);
 }
 
 .experiment-badge {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.6875rem;
+    padding: 0.15rem 0.4rem;
+    font-size: 0.6rem;
+    /* Smaller badge */
     font-weight: 600;
     text-transform: uppercase;
-    border-radius: var(--radius-full);
+    border-radius: 4px;
+    letter-spacing: 0.02em;
 }
 
 .experiment-badge.beginner {
     background: rgba(34, 197, 94, 0.1);
     color: var(--success-400);
+    border: 1px solid rgba(34, 197, 94, 0.2);
 }
 
 .experiment-badge.intermediate {
     background: rgba(234, 179, 8, 0.1);
     color: var(--warning-400);
+    border: 1px solid rgba(234, 179, 8, 0.2);
 }
 
 .experiment-badge.advanced {
     background: rgba(239, 68, 68, 0.1);
     color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.2);
 }
 
 .experiment-title {
     font-family: var(--font-display);
-    font-size: 1.0625rem;
+    font-size: 0.95rem;
+    /* Slightly smaller title */
     font-weight: 600;
     color: var(--neutral-100);
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.25rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
 }
 
 .experiment-aim {
-    font-size: 0.875rem;
+    font-size: 0.75rem;
+    /* Smaller text */
     color: var(--neutral-400);
-    line-height: 1.5;
-    margin-bottom: 1rem;
+    line-height: 1.4;
+    margin-bottom: auto;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    min-height: 2.1em;
+    /* Reduced min-height */
 }
 
 .experiment-meta {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    /* Reduced margin */
+    padding-top: 0.75rem;
+    /* Reduced padding */
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .experiment-date {
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: var(--neutral-500);
 }
 
-.experiment-quiz-badge {
-    font-size: 0.6875rem;
+.experiment-quiz-btn {
+    font-size: 0.65rem;
     font-weight: 600;
-    padding: 0.25rem 0.5rem;
-    background: rgba(99, 102, 241, 0.1);
+    padding: 0.15rem 0.6rem;
+    background: rgba(99, 102, 241, 0.15);
     color: var(--primary-400);
-    border-radius: var(--radius-sm);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.experiment-quiz-btn:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    color: #fff;
 }
 
 .experiment-actions {
     display: flex;
-    gap: 0.75rem;
-    margin-top: 1rem;
-    width: 100%;
+    gap: 0.5rem;
+    margin-left: auto;
 }
 
 .experiment-action-btn {
-    width: 36px;
-    height: 36px;
+    width: 28px;
+    height: 28px;
     border: none;
-    border-radius: var(--radius-md);
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: all 0.2s ease;
     padding: 0;
 }
 
 .experiment-action-btn svg {
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
 }
 
 .experiment-action-btn.edit-btn {
     background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
     color: #60a5fa;
 }
 
 .experiment-action-btn.edit-btn:hover {
     background: rgba(59, 130, 246, 0.2);
-    border-color: rgba(59, 130, 246, 0.5);
-    transform: scale(1.05);
+    transform: translateY(-1px);
 }
 
 .experiment-action-btn.delete-btn {
     background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
     color: #f87171;
 }
 
 .experiment-action-btn.delete-btn:hover {
     background: rgba(239, 68, 68, 0.2);
-    border-color: rgba(239, 68, 68, 0.5);
-    transform: scale(1.05);
+    transform: translateY(-1px);
 }
 
 .experiment-btn {

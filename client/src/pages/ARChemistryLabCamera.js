@@ -1,18 +1,28 @@
 // AR Chemistry Lab - Camera-Based 2D AR Experience
 // Pure canvas-based rendering with no 3D libraries
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './ARChemistryLabCamera.css';
 
 const ARChemistryLabCamera = () => {
+    const navigate = useNavigate();
+
     // Refs
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const animationRef = useRef(null);
     const touchStartRef = useRef({ x: 0, y: 0 });
 
+    // Mobile dropdown state
+    const [showElementDropdown, setShowElementDropdown] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState('Basic Elements');
+
     // State
     const [cameraActive, setCameraActive] = useState(false);
     const [cameraError, setCameraError] = useState(null);
+    const [permissionState, setPermissionState] = useState('prompt'); // 'prompt', 'granted', 'denied', 'requesting'
+    const [showPermissionUI, setShowPermissionUI] = useState(false);
+    const [isCheckingPermission, setIsCheckingPermission] = useState(true);
     const [selectedElement, setSelectedElement] = useState(null);
     const [placedElements, setPlacedElements] = useState([]);
     const [activeReaction, setActiveReaction] = useState(null);
@@ -281,8 +291,89 @@ const ARChemistryLabCamera = () => {
         { id: 10, name: 'Magnesium Combustion', elements: ['Mg', 'O'], description: 'Brilliant white flame reaction' },
     ];
 
-    // Initialize camera
-    const startCamera = useCallback(async () => {
+    // Check camera permission status on mount
+    useEffect(() => {
+        checkCameraPermission();
+    }, []);
+
+    // Check if we're on a secure context (HTTPS)
+    const isSecureContext = () => {
+        return window.isSecureContext ||
+            window.location.protocol === 'https:' ||
+            window.location.hostname === 'localhost' ||
+            window.location.hostname === '127.0.0.1';
+    };
+
+    // Check if camera permission is available
+    const checkCameraPermission = async () => {
+        setIsCheckingPermission(true);
+
+        try {
+            // First check if we're on HTTPS (required for camera on mobile)
+            if (!isSecureContext()) {
+                setCameraError('⚠️ Camera requires HTTPS! You are currently on HTTP. Please access this page via HTTPS or localhost.');
+                setPermissionState('denied');
+                setIsCheckingPermission(false);
+                return;
+            }
+
+            // Check if mediaDevices is available
+            if (!navigator.mediaDevices) {
+                // Try to polyfill for older browsers
+                const getUserMedia = navigator.getUserMedia ||
+                    navigator.webkitGetUserMedia ||
+                    navigator.mozGetUserMedia ||
+                    navigator.msGetUserMedia;
+
+                if (!getUserMedia) {
+                    setCameraError('Camera API not available. Please use a modern browser like Chrome, Safari, or Firefox.');
+                    setPermissionState('denied');
+                    setIsCheckingPermission(false);
+                    return;
+                }
+            }
+
+            if (!navigator.mediaDevices?.getUserMedia) {
+                setCameraError('Camera access not available. Please ensure you are using HTTPS and a supported browser.');
+                setPermissionState('denied');
+                setIsCheckingPermission(false);
+                return;
+            }
+
+            // Try to check permission status using Permissions API (if available)
+            if (navigator.permissions && navigator.permissions.query) {
+                try {
+                    const result = await navigator.permissions.query({ name: 'camera' });
+                    setPermissionState(result.state);
+
+                    // Listen for permission changes
+                    result.addEventListener('change', () => {
+                        setPermissionState(result.state);
+                        if (result.state === 'granted') {
+                            setShowPermissionUI(false);
+                        }
+                    });
+                } catch (e) {
+                    // Permissions API not supported for camera, show prompt UI
+                    console.log('Permissions API not available, will request directly');
+                    setPermissionState('prompt');
+                }
+            } else {
+                setPermissionState('prompt');
+            }
+        } catch (err) {
+            console.error('Permission check error:', err);
+            setPermissionState('prompt');
+        }
+
+        setIsCheckingPermission(false);
+    };
+
+    // Request camera permission with user interaction
+    const requestCameraPermission = async () => {
+        setPermissionState('requesting');
+        setCameraError(null);
+
         try {
             const constraints = {
                 video: {
@@ -294,6 +385,10 @@ const ARChemistryLabCamera = () => {
 
             const stream = await navigator.mediaDevices.getUserMedia(constraints);
 
+            // Permission granted!
+            setPermissionState('granted');
+            setShowPermissionUI(false);
+
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
                 await videoRef.current.play();
@@ -301,10 +396,67 @@ const ARChemistryLabCamera = () => {
                 setCameraError(null);
             }
         } catch (err) {
-            console.error('Camera error:', err);
-            setCameraError('Camera access denied. Please allow camera permissions.');
+            console.error('Camera permission error:', err);
+            setPermissionState('denied');
+
+            // Provide specific error messages
+            if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                setCameraError('Camera permission denied. Please enable it in your browser settings.');
+            } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                setCameraError('No camera found on this device.');
+            } else if (err.name === 'NotReadableError' || err.name === 'TrackStartError') {
+                setCameraError('Camera is already in use by another application.');
+            } else if (err.name === 'OverconstrainedError') {
+                setCameraError('Camera does not meet the required specifications.');
+            } else if (err.name === 'SecurityError') {
+                setCameraError('Camera access requires HTTPS. Please use a secure connection.');
+            } else {
+                setCameraError(`Camera error: ${err.message || 'Unknown error occurred'}`);
+            }
         }
-    }, []);
+    };
+
+    // Initialize camera (called after permission is granted)
+    const startCamera = useCallback(async () => {
+        if (permissionState === 'granted') {
+            try {
+                const constraints = {
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    }
+                };
+
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                if (videoRef.current) {
+                    videoRef.current.srcObject = stream;
+                    await videoRef.current.play();
+                    setCameraActive(true);
+                    setCameraError(null);
+                }
+            } catch (err) {
+                console.error('Camera error:', err);
+                setCameraError('Failed to start camera. Please try again.');
+            }
+        } else {
+            // Show permission UI
+            setShowPermissionUI(true);
+        }
+    }, [permissionState]);
+
+    // Handle start button click - shows permission UI first
+    const handleStartClick = () => {
+        if (permissionState === 'granted') {
+            startCamera();
+        } else if (permissionState === 'denied') {
+            setShowPermissionUI(true);
+        } else {
+            // Request permission
+            requestCameraPermission();
+        }
+    };
 
     // Stop camera
     const stopCamera = useCallback(() => {
@@ -884,6 +1036,14 @@ const ARChemistryLabCamera = () => {
             {/* Start Screen */}
             {!cameraActive && (
                 <div className="start-screen">
+                    {/* Back to Dashboard Button */}
+                    <button className="back-to-dashboard" onClick={() => navigate('/dashboard')}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                        Back to Dashboard
+                    </button>
+
                     <div className="start-content">
                         <div className="start-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -896,36 +1056,149 @@ const ARChemistryLabCamera = () => {
                         <p>Experience chemistry in augmented reality</p>
                         <p className="start-subtitle">Place elements, combine them, and watch reactions happen!</p>
 
-                        <button className="start-btn" onClick={startCamera}>
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                                <circle cx="12" cy="13" r="4" />
-                            </svg>
-                            Start Camera
+                        {/* Permission Status Indicator */}
+                        {isCheckingPermission ? (
+                            <div className="permission-status checking">
+                                <div className="spinner"></div>
+                                <span>Checking camera access...</span>
+                            </div>
+                        ) : permissionState === 'granted' ? (
+                            <div className="permission-status granted">
+                                <span className="status-icon">✓</span>
+                                <span>Camera access granted</span>
+                            </div>
+                        ) : permissionState === 'denied' ? (
+                            <div className="permission-status denied">
+                                <span className="status-icon">✕</span>
+                                <span>Camera access blocked</span>
+                            </div>
+                        ) : null}
+
+                        {/* Main Action Button */}
+                        <button
+                            className={`start-btn ${permissionState === 'requesting' ? 'loading' : ''}`}
+                            onClick={handleStartClick}
+                            disabled={isCheckingPermission || permissionState === 'requesting'}
+                        >
+                            {permissionState === 'requesting' ? (
+                                <>
+                                    <div className="btn-spinner"></div>
+                                    Requesting Access...
+                                </>
+                            ) : permissionState === 'denied' ? (
+                                <>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                                        <line x1="12" y1="9" x2="12" y2="13" />
+                                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                                    </svg>
+                                    Enable Camera Access
+                                </>
+                            ) : (
+                                <>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                        <circle cx="12" cy="13" r="4" />
+                                    </svg>
+                                    Start Camera
+                                </>
+                            )}
                         </button>
 
+                        {/* Error Message */}
                         {cameraError && (
-                            <div className="camera-error">{cameraError}</div>
+                            <div className="camera-error">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <line x1="12" y1="8" x2="12" y2="12" />
+                                    <line x1="12" y1="16" x2="12.01" y2="16" />
+                                </svg>
+                                <span>{cameraError}</span>
+                            </div>
                         )}
 
-                        <div className="features-grid">
-                            <div className="feature">
-                                <span className="feature-icon">🧪</span>
-                                <span>Real-time Reactions</span>
+                        {/* Permission Denied Instructions */}
+                        {permissionState === 'denied' && (
+                            <div className="permission-help">
+                                {cameraError?.includes('HTTPS') ? (
+                                    <>
+                                        <h3>🔒 Secure Connection Required</h3>
+                                        <p className="help-intro">Camera access requires HTTPS (secure connection). Here's how to fix it:</p>
+                                        <div className="help-steps">
+                                            <div className="help-step">
+                                                <span className="step-num">1</span>
+                                                <span>If using <strong>DevTunnels</strong>, make sure to use the HTTPS URL</span>
+                                            </div>
+                                            <div className="help-step">
+                                                <span className="step-num">2</span>
+                                                <span>Or use <strong>ngrok</strong>: Run <code>ngrok http 3000</code> and use the https:// URL</span>
+                                            </div>
+                                            <div className="help-step">
+                                                <span className="step-num">3</span>
+                                                <span>Or access from <strong>localhost</strong> on the same device</span>
+                                            </div>
+                                        </div>
+                                        <div className="current-url">
+                                            <span>Current URL:</span>
+                                            <code>{window.location.href}</code>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <h3>📱 How to enable camera:</h3>
+                                        <div className="help-steps">
+                                            <div className="help-step">
+                                                <span className="step-num">1</span>
+                                                <span>Tap the <strong>🔒 lock icon</strong> in the address bar</span>
+                                            </div>
+                                            <div className="help-step">
+                                                <span className="step-num">2</span>
+                                                <span>Find <strong>"Camera"</strong> or <strong>"Site Settings"</strong></span>
+                                            </div>
+                                            <div className="help-step">
+                                                <span className="step-num">3</span>
+                                                <span>Change Camera permission to <strong>"Allow"</strong></span>
+                                            </div>
+                                            <div className="help-step">
+                                                <span className="step-num">4</span>
+                                                <span>Reload the page and try again</span>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                                <button className="retry-btn" onClick={() => window.location.reload()}>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                                        <path d="M3 3v5h5" />
+                                        <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                                        <path d="M16 21h5v-5" />
+                                    </svg>
+                                    Reload Page
+                                </button>
                             </div>
-                            <div className="feature">
-                                <span className="feature-icon">⚛️</span>
-                                <span>20+ Experiments</span>
+                        )}
+
+                        {/* Features Grid */}
+                        {permissionState !== 'denied' && (
+                            <div className="features-grid">
+                                <div className="feature">
+                                    <span className="feature-icon">🧪</span>
+                                    <span>Real-time Reactions</span>
+                                </div>
+                                <div className="feature">
+                                    <span className="feature-icon">⚛️</span>
+                                    <span>20+ Experiments</span>
+                                </div>
+                                <div className="feature">
+                                    <span className="feature-icon">📚</span>
+                                    <span>Learn Bonding</span>
+                                </div>
+                                <div className="feature">
+                                    <span className="feature-icon">🎨</span>
+                                    <span>Visual Effects</span>
+                                </div>
                             </div>
-                            <div className="feature">
-                                <span className="feature-icon">📚</span>
-                                <span>Learn Bonding</span>
-                            </div>
-                            <div className="feature">
-                                <span className="feature-icon">🎨</span>
-                                <span>Visual Effects</span>
-                            </div>
-                        </div>
+                        )}
                     </div>
                 </div>
             )}
@@ -964,36 +1237,89 @@ const ARChemistryLabCamera = () => {
                 </div>
             )}
 
-            {/* Bottom Elements Panel */}
+            {/* Bottom Elements Panel - Mobile Friendly */}
             {cameraActive && (
-                <div className="elements-panel">
-                    <div className="elements-scroll">
-                        {Object.entries(elementCategories).map(([category, ids]) => (
-                            <div key={category} className="element-category">
-                                <div className="category-label">{category}</div>
-                                <div className="category-elements">
-                                    {ids.map(id => {
-                                        const el = elements[id];
-                                        if (!el) return null;
-                                        return (
-                                            <button
-                                                key={id}
-                                                className={`element-btn ${selectedElement === id ? 'selected' : ''}`}
-                                                onClick={() => selectElement(id)}
-                                                style={{
-                                                    '--el-color': el.color,
-                                                    '--el-bg': `${el.color}22`
-                                                }}
-                                            >
-                                                <span className="element-symbol">{el.symbol}</span>
-                                                <span className="element-name">{el.name.length > 8 ? el.name.slice(0, 8) + '...' : el.name}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
-                            </div>
-                        ))}
+                <div className="elements-panel-mobile">
+                    {/* Close Button */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                            Elements
+                        </span>
+                        <button
+                            className="close-panel-btn"
+                            onClick={() => setShowElementDropdown(false)}
+                            title="Close"
+                        >
+                            ✕
+                        </button>
                     </div>
+
+                    {/* Category Dropdown Toggle */}
+                    <div className="element-selector">
+                        <button
+                            className="dropdown-toggle"
+                            onClick={() => setShowElementDropdown(!showElementDropdown)}
+                        >
+                            <span className="selected-category">{selectedCategory}</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={showElementDropdown ? 'rotate' : ''}>
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {showElementDropdown && (
+                            <div className="dropdown-menu">
+                                {Object.keys(elementCategories).map(category => (
+                                    <button
+                                        key={category}
+                                        className={`dropdown-item ${selectedCategory === category ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setSelectedCategory(category);
+                                            setShowElementDropdown(false);
+                                        }}
+                                    >
+                                        {category}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Elements Grid */}
+                    <div className="elements-grid">
+                        {elementCategories[selectedCategory]?.map(id => {
+                            const el = elements[id];
+                            if (!el) return null;
+                            return (
+                                <button
+                                    key={id}
+                                    className={`element-chip ${selectedElement === id ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        setSelectedElement(id);
+                                        setShowElementInfo(el);
+                                    }}
+                                    style={{
+                                        '--el-color': el.color,
+                                        '--el-bg': `${el.color}22`
+                                    }}
+                                >
+                                    <span className="chip-symbol" style={{ color: el.color }}>{el.symbol}</span>
+                                    <span className="chip-name">{el.name.length > 6 ? el.name.slice(0, 6) + '..' : el.name}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Selected Element Indicator */}
+                    {selectedElement && (
+                        <div className="selected-element-bar">
+                            <span>Tap screen to place:</span>
+                            <span className="element-label" style={{ color: elements[selectedElement]?.color }}>
+                                {elements[selectedElement]?.name}
+                            </span>
+                            <button className="clear-selection" onClick={() => setSelectedElement(null)}>✕</button>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1097,24 +1423,26 @@ const ARChemistryLabCamera = () => {
                             <h3>🧪 Experiments</h3>
                             <button className="close-experiments" onClick={() => setShowExperiments(false)}>×</button>
                         </div>
-                        <div className="experiments-list">
+                        <div className="experiments-grid">
                             {experiments.map(exp => (
-                                <div key={exp.id} className="experiment-card" onClick={() => loadExperiment(exp)}>
-                                    <div className="experiment-number">{exp.id}</div>
-                                    <div className="experiment-content">
-                                        <h4>{exp.name}</h4>
-                                        <p>{exp.description}</p>
-                                        <div className="experiment-elements">
-                                            {exp.elements.map(elId => (
-                                                <span key={elId} className="exp-element" style={{ background: elements[elId]?.color + '44', color: elements[elId]?.color }}>
-                                                    {elements[elId]?.symbol || elId}
-                                                </span>
-                                            ))}
-                                        </div>
+                                <div key={exp.id} className="experiment-box" onClick={() => loadExperiment(exp)}>
+                                    <div className="exp-box-number">{exp.id}</div>
+                                    <h4 className="exp-box-title">{exp.name}</h4>
+                                    <p className="exp-box-description">{exp.description}</p>
+                                    <div className="exp-box-elements">
+                                        {exp.elements.map(elId => (
+                                            <span 
+                                                key={elId} 
+                                                className="exp-box-element" 
+                                                style={{ 
+                                                    background: (elements[elId]?.color || '#888888') + '66', 
+                                                    color: elements[elId]?.color || '#888888',
+                                                }}
+                                            >
+                                                {elements[elId]?.symbol || elId}
+                                            </span>
+                                        ))}
                                     </div>
-                                    <svg className="experiment-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                    </svg>
                                 </div>
                             ))}
                         </div>

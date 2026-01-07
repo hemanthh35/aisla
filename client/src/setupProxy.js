@@ -9,7 +9,8 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function (app) {
     // Use environment variable or default to localhost
-    const apiTarget = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+    // For network access, use 0.0.0.0:5000 or your machine IP
+    const apiTarget = process.env.REACT_APP_API_URL || 'http://0.0.0.0:5000';
 
     console.log('📡 Proxy target:', apiTarget);
 

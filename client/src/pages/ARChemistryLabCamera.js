@@ -1240,6 +1240,20 @@ const ARChemistryLabCamera = () => {
             {/* Bottom Elements Panel - Mobile Friendly */}
             {cameraActive && (
                 <div className="elements-panel-mobile">
+                    {/* Close Button */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '12px', fontWeight: '600', color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: '0.8px' }}>
+                            Elements
+                        </span>
+                        <button
+                            className="close-panel-btn"
+                            onClick={() => setShowElementDropdown(false)}
+                            title="Close"
+                        >
+                            ✕
+                        </button>
+                    </div>
+
                     {/* Category Dropdown Toggle */}
                     <div className="element-selector">
                         <button
@@ -1409,24 +1423,26 @@ const ARChemistryLabCamera = () => {
                             <h3>🧪 Experiments</h3>
                             <button className="close-experiments" onClick={() => setShowExperiments(false)}>×</button>
                         </div>
-                        <div className="experiments-list">
+                        <div className="experiments-grid">
                             {experiments.map(exp => (
-                                <div key={exp.id} className="experiment-card" onClick={() => loadExperiment(exp)}>
-                                    <div className="experiment-number">{exp.id}</div>
-                                    <div className="experiment-content">
-                                        <h4>{exp.name}</h4>
-                                        <p>{exp.description}</p>
-                                        <div className="experiment-elements">
-                                            {exp.elements.map(elId => (
-                                                <span key={elId} className="exp-element" style={{ background: elements[elId]?.color + '44', color: elements[elId]?.color }}>
-                                                    {elements[elId]?.symbol || elId}
-                                                </span>
-                                            ))}
-                                        </div>
+                                <div key={exp.id} className="experiment-box" onClick={() => loadExperiment(exp)}>
+                                    <div className="exp-box-number">{exp.id}</div>
+                                    <h4 className="exp-box-title">{exp.name}</h4>
+                                    <p className="exp-box-description">{exp.description}</p>
+                                    <div className="exp-box-elements">
+                                        {exp.elements.map(elId => (
+                                            <span 
+                                                key={elId} 
+                                                className="exp-box-element" 
+                                                style={{ 
+                                                    background: (elements[elId]?.color || '#888888') + '66', 
+                                                    color: elements[elId]?.color || '#888888',
+                                                }}
+                                            >
+                                                {elements[elId]?.symbol || elId}
+                                            </span>
+                                        ))}
                                     </div>
-                                    <svg className="experiment-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                        <path d="M5 12h14M12 5l7 7-7 7" />
-                                    </svg>
                                 </div>
                             ))}
                         </div>

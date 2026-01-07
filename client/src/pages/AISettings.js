@@ -44,14 +44,31 @@ const AISettings = () => {
     const fetchSettings = async () => {
         try {
             const token = localStorage.getItem('token');
+            console.log('Fetching AI settings...');
             const res = await axios.get('/api/settings/ai', {
                 headers: { Authorization: `Bearer ${token}` }
             });
+            console.log('Settings loaded:', res.data);
             setSettings(res.data.settings);
             setStatus(res.data.status);
             setError(null);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to load settings');
+            console.error('Error fetching settings:', err);
+            const errorMsg = err.response?.data?.message || err.message || 'Failed to load settings';
+            setError(errorMsg);
+            // Set default settings on error so the page isn't blank
+            setSettings({
+                provider: 'ollama',
+                ollamaModel: 'gemma3:4b',
+                ollamaUrl: 'http://localhost:11434',
+                geminiModel: 'gemini-2.0-flash',
+                temperature: 0.7,
+                maxTokens: 1024
+            });
+            setStatus({
+                ollama: { available: false, models: [] },
+                gemini: { available: false }
+            });
         } finally {
             setLoading(false);
         }

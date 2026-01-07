@@ -1,14 +1,21 @@
 // AR Chemistry Lab - Camera-Based 2D AR Experience
 // Pure canvas-based rendering with no 3D libraries
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './ARChemistryLabCamera.css';
 
 const ARChemistryLabCamera = () => {
+    const navigate = useNavigate();
+
     // Refs
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const animationRef = useRef(null);
     const touchStartRef = useRef({ x: 0, y: 0 });
+
+    // Mobile dropdown state
+    const [showElementDropdown, setShowElementDropdown] = useState(false);
+    const [selectedCategory, setSelectedCategory] = useState('Basic Elements');
 
     // State
     const [cameraActive, setCameraActive] = useState(false);
@@ -1029,6 +1036,14 @@ const ARChemistryLabCamera = () => {
             {/* Start Screen */}
             {!cameraActive && (
                 <div className="start-screen">
+                    {/* Back to Dashboard Button */}
+                    <button className="back-to-dashboard" onClick={() => navigate('/dashboard')}>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                        Back to Dashboard
+                    </button>
+
                     <div className="start-content">
                         <div className="start-icon">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -1222,36 +1237,75 @@ const ARChemistryLabCamera = () => {
                 </div>
             )}
 
-            {/* Bottom Elements Panel */}
+            {/* Bottom Elements Panel - Mobile Friendly */}
             {cameraActive && (
-                <div className="elements-panel">
-                    <div className="elements-scroll">
-                        {Object.entries(elementCategories).map(([category, ids]) => (
-                            <div key={category} className="element-category">
-                                <div className="category-label">{category}</div>
-                                <div className="category-elements">
-                                    {ids.map(id => {
-                                        const el = elements[id];
-                                        if (!el) return null;
-                                        return (
-                                            <button
-                                                key={id}
-                                                className={`element-btn ${selectedElement === id ? 'selected' : ''}`}
-                                                onClick={() => selectElement(id)}
-                                                style={{
-                                                    '--el-color': el.color,
-                                                    '--el-bg': `${el.color}22`
-                                                }}
-                                            >
-                                                <span className="element-symbol">{el.symbol}</span>
-                                                <span className="element-name">{el.name.length > 8 ? el.name.slice(0, 8) + '...' : el.name}</span>
-                                            </button>
-                                        );
-                                    })}
-                                </div>
+                <div className="elements-panel-mobile">
+                    {/* Category Dropdown Toggle */}
+                    <div className="element-selector">
+                        <button
+                            className="dropdown-toggle"
+                            onClick={() => setShowElementDropdown(!showElementDropdown)}
+                        >
+                            <span className="selected-category">{selectedCategory}</span>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={showElementDropdown ? 'rotate' : ''}>
+                                <path d="M6 9l6 6 6-6" />
+                            </svg>
+                        </button>
+
+                        {/* Dropdown Menu */}
+                        {showElementDropdown && (
+                            <div className="dropdown-menu">
+                                {Object.keys(elementCategories).map(category => (
+                                    <button
+                                        key={category}
+                                        className={`dropdown-item ${selectedCategory === category ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setSelectedCategory(category);
+                                            setShowElementDropdown(false);
+                                        }}
+                                    >
+                                        {category}
+                                    </button>
+                                ))}
                             </div>
-                        ))}
+                        )}
                     </div>
+
+                    {/* Elements Grid */}
+                    <div className="elements-grid">
+                        {elementCategories[selectedCategory]?.map(id => {
+                            const el = elements[id];
+                            if (!el) return null;
+                            return (
+                                <button
+                                    key={id}
+                                    className={`element-chip ${selectedElement === id ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        setSelectedElement(id);
+                                        setShowElementInfo(el);
+                                    }}
+                                    style={{
+                                        '--el-color': el.color,
+                                        '--el-bg': `${el.color}22`
+                                    }}
+                                >
+                                    <span className="chip-symbol" style={{ color: el.color }}>{el.symbol}</span>
+                                    <span className="chip-name">{el.name.length > 6 ? el.name.slice(0, 6) + '..' : el.name}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Selected Element Indicator */}
+                    {selectedElement && (
+                        <div className="selected-element-bar">
+                            <span>Tap screen to place:</span>
+                            <span className="element-label" style={{ color: elements[selectedElement]?.color }}>
+                                {elements[selectedElement]?.name}
+                            </span>
+                            <button className="clear-selection" onClick={() => setSelectedElement(null)}>✕</button>
+                        </div>
+                    )}
                 </div>
             )}
 

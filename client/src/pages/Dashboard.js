@@ -327,17 +327,7 @@ const Dashboard = () => {
               Chemistry Lab
             </Link>
 
-            <Link to="/chemistry-lab-ar" className="sidebar-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-                <path d="m9 12 2 2 4-4" />
-                <path d="M12 2v2" />
-                <path d="M12 20v2" />
-                <path d="m4.93 4.93 1.41 1.41" />
-                <path d="m17.66 17.66 1.41 1.41" />
-              </svg>
-              AR Chemistry Lab
-            </Link>
+
 
             {/* Camera-Based AR Chemistry Lab - Works on all phones */}
             <Link to="/ar-chemistry-camera" className="sidebar-link">
@@ -545,7 +535,15 @@ const Dashboard = () => {
                         {new Date(exp.createdAt).toLocaleDateString()}
                       </span>
                       {exp.quizGenerated && (
-                        <span className="experiment-quiz-badge">Quiz Available</span>
+                        <button
+                          className="experiment-quiz-btn"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/experiment/${exp._id}/quiz`);
+                          }}
+                        >
+                          Take Quiz
+                        </button>
                       )}
                     </div>
                     {(isAdmin || (isFaculty && exp.createdBy === user?._id)) && (

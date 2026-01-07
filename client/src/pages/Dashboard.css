@@ -921,13 +921,24 @@
     color: var(--neutral-500);
 }
 
-.experiment-quiz-badge {
+.experiment-quiz-btn {
     font-size: 0.65rem;
     font-weight: 600;
-    padding: 0.15rem 0.4rem;
-    background: rgba(99, 102, 241, 0.1);
+    padding: 0.15rem 0.6rem;
+    background: rgba(99, 102, 241, 0.15);
     color: var(--primary-400);
+    border: 1px solid rgba(99, 102, 241, 0.3);
     border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.experiment-quiz-btn:hover {
+    background: rgba(99, 102, 241, 0.25);
+    border-color: rgba(99, 102, 241, 0.5);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+    color: #fff;
 }
 
 .experiment-actions {

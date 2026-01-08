@@ -1,0 +1,33 @@
+{
+  "name": "AISLA",
+  "description": "AI Self-Learning Lab Assistant - Badge Management System with Local LLM",
+  "repository": "https://github.com/hemanthh35/labs",
+  "keywords": ["react", "node", "mongodb", "ai", "education", "badges", "llm"],
+  "buildpacks": [
+    { "url": "heroku/nodejs" }
+  ],
+  "env": {
+    "MONGO_URI": {
+      "description": "MongoDB Atlas Connection String",
+      "required": true
+    },
+    "JWT_SECRET": {
+      "description": "JWT Secret Key",
+      "required": true
+    },
+    "NODE_ENV": {
+      "description": "Node environment",
+      "value": "production",
+      "required": true
+    },
+    "PORT": {
+      "description": "Server port",
+      "value": "5000",
+      "required": false
+    },
+    "REACT_APP_API_URL": {
+      "description": "Backend API URL",
+      "required": false
+    }
+  }
+}

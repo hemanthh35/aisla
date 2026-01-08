@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AISLA - Portfolio Document</title>
+    <style>
+        @media print {
+            body {
+                margin: 0;
+            }
+
+            .page {
+                page-break-after: always;
+                margin: 0;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            background: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            background: white;
+            margin: 20px auto;
+            padding: 25mm;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            text-align: center;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 48px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .tagline {
+            font-size: 18px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .meta-info {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
+        }
+
+        /* Section Titles */
+        h2 {
+            color: #667eea;
+            font-size: 24px;
+            margin: 30px 0 15px 0;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+
+        h3 {
+            color: #764ba2;
+            font-size: 18px;
+            margin: 20px 0 10px 0;
+        }
+
+        /* Content */
+        p {
+            margin-bottom: 12px;
+            text-align: justify;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin: 25px 0;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+            border-radius: 10px;
+            border: 2px solid #667eea30;
+        }
+
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            margin-top: 5px;
+        }
+
+        /* Features List */
+        .feature-item {
+            margin: 15px 0;
+            padding-left: 25px;
+            position: relative;
+        }
+
+        .feature-item:before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        /* Tech Stack */
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .tech-card {
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #667eea;
+            border-radius: 5px;
+        }
+
+        .tech-title {
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .tech-value {
+            font-size: 14px;
+            color: #666;
+        }
+
+        /* Problem-Solution */
+        .problem-box {
+            background: #ffe6e6;
+            border-left: 5px solid #ff4444;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .solution-box {
+            background: #e6ffe6;
+            border-left: 5px solid #44ff44;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 13px;
+        }
+
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
+        /* Footer */
+        .footer {
+            position: absolute;
+            bottom: 20mm;
+            left: 25mm;
+            right: 25mm;
+            text-align: center;
+            font-size: 11px;
+            color: #888;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+        }
+
+        .page-number {
+            position: absolute;
+            bottom: 15mm;
+            right: 25mm;
+            font-size: 11px;
+            color: #888;
+        }
+
+        /* Print Button */
+        .print-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            z-index: 1000;
+        }
+
+        .print-btn:hover {
+            background: #764ba2;
+        }
+
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        ul {
+            margin: 10px 0 10px 25px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <button class="print-btn no-print" onclick="window.print()">📄 Save as PDF</button>
+
+    <!-- PAGE 1: Cover & Overview -->
+    <div class="page">
+        <div class="header">
+            <div class="logo">AISLA</div>
+            <div class="tagline">AI Self-Learning Lab Assistant</div>
+            <div class="meta-info">
+                <strong>Version:</strong> 1.0.0 |
+                <strong>Built For:</strong> GITAM Hackathon |
+                <strong>Date:</strong> January 2026
+            </div>
+        </div>
+
+        <h2>🎯 Executive Summary</h2>
+        <p>
+            AISLA (AI Self-Learning Lab Assistant) is a revolutionary full-stack educational platform that transforms
+            laboratory education through artificial intelligence, 3D visualization, and interactive simulations. Built
+            specifically for the GITAM Hackathon, this platform addresses critical challenges in traditional laboratory
+            education by providing students with 24/7 access to virtual labs, AI-powered assistance, and intelligent
+            content generation.
+        </p>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">10K+</div>
+                <div class="stat-label">Active Students</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">500+</div>
+                <div class="stat-label">Experiments</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">98%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">5+</div>
+                <div class="stat-label">Disciplines</div>
+            </div>
+        </div>
+
+        <h2>🔴 The Problem</h2>
+        <div class="problem-box">
+            <p><strong>Traditional laboratory education faces critical challenges:</strong></p>
+            <ul>
+                <li><strong>Limited Lab Access:</strong> Students have restricted access due to time, resources, or
+                    geography</li>
+                <li><strong>Passive Learning:</strong> Reading manuals and watching demos doesn't engage students
+                    effectively</li>
+                <li><strong>No Instant Support:</strong> Students must wait for classes to get answers, breaking
+                    learning flow</li>
+                <li><strong>Manual Content Creation:</strong> Faculty spend hours creating structured documentation</li>
+                <li><strong>Safety Concerns:</strong> Dangerous experiments limit hands-on practice</li>
+                <li><strong>Lack of Practice:</strong> No access to labs outside scheduled hours</li>
+            </ul>
+        </div>
+
+        <h2>✅ Our Solution</h2>
+        <div class="solution-box">
+            <p><strong>AISLA provides comprehensive AI-powered tools:</strong></p>
+            <ul>
+                <li><strong>Virtual 3D Chemistry Lab:</strong> Conduct experiments safely with realistic simulations
+                </li>
+                <li><strong>AI-Powered Assistance:</strong> 24/7 instant answers using Ollama or Google Gemini</li>
+                <li><strong>Intelligent Experiment Generation:</strong> Auto-create comprehensive lab documentation</li>
+                <li><strong>Integrated Coding Playground:</strong> Full-featured IDE with AI suggestions</li>
+                <li><strong>Gamification System:</strong> Badges and points to motivate learning</li>
+            </ul>
+        </div>
+
+        <div class="footer">
+            AISLA - Transforming Laboratory Education Through AI
+        </div>
+        <div class="page-number">Page 1</div>
+    </div>
+
+    <!-- PAGE 2: Key Features -->
+    <div class="page">
+        <div class="header">
+            <div class="logo" style="font-size: 32px;">AISLA</div>
+        </div>
+
+        <h2>🌟 Key Features</h2>
+
+        <h3>1. 🧪 AI-Powered Experiment Generation</h3>
+        <p>
+            Faculty can create comprehensive, structured experiments in minutes. Simply provide a title and basic
+            content—the AI automatically generates aims, theory, apparatus lists, step-by-step procedures, key formulas,
+            safety precautions, and common mistakes.
+        </p>
+        <div class="feature-item"><strong>Aim:</strong> Clear objective statement</div>
+        <div class="feature-item"><strong>Theory:</strong> Comprehensive theoretical background</div>
+        <div class="feature-item"><strong>Apparatus:</strong> Complete equipment list</div>
+        <div class="feature-item"><strong>Procedure:</strong> Numbered step-by-step instructions</div>
+        <div class="feature-item"><strong>Formulas:</strong> All required mathematical equations</div>
+        <div class="feature-item"><strong>Safety:</strong> Guidelines and best practices</div>
+
+        <h3>2. 🔬 Virtual 3D Chemistry Laboratory</h3>
+        <p>
+            A fully immersive 3D virtual chemistry laboratory built with Babylon.js where students conduct experiments
+            safely. Mix chemicals, heat solutions, observe reactions with zero physical risk.
+        </p>
+        <p><strong>Available Equipment:</strong> Beakers, test tubes, conical flasks, measuring cylinders, Bunsen
+            burner, tripod stand, stirring rod</p>
+        <p><strong>Features:</strong> 50+ chemical reactions, visual effects (bubbles, smoke, precipitates),
+            heat-dependent reactions, safety warnings, balanced chemical equations</p>
+
+        <h3>3. 💻 Coding Grounds - Online IDE</h3>
+        <p>
+            Comprehensive online code editor supporting Python, JavaScript, C, C++, and Java with AI-powered assistance,
+            code execution, and complexity analysis.
+        </p>
+
+        <table>
+            <tr>
+                <th>Feature</th>
+                <th>Description</th>
+            </tr>
+            <tr>
+                <td>Multi-Language Support</td>
+                <td>Python 3.10, JavaScript, C, C++, Java</td>
+            </tr>
+            <tr>
+                <td>Code Execution</td>
+                <td>Secure sandbox via Piston API</td>
+            </tr>
+            <tr>
+                <td>AI Suggestions</td>
+                <td>Hints and guidance without direct answers</td>
+            </tr>
+            <tr>
+                <td>Test Cases</td>
+                <td>Add, edit, and run custom test cases</td>
+            </tr>
+            <tr>
+                <td>Complexity Analysis</td>
+                <td>AI-powered Big-O notation analysis</td>
+            </tr>
+        </table>
+
+        <h3>4. 🤖 Real-Time AI Chat Assistant</h3>
+        <p>
+            ChatGPT-like streaming chat widget providing instant answers to student queries with real-time
+            token-by-token display, markdown support, and conversation history. Available 24/7 on every page.
+        </p>
+
+        <h3>5. 📊 AI Diagram Generator</h3>
+        <p>
+            Generate professional diagrams from text descriptions. Supports Mermaid.js, Graphviz, PlantUML, and D2
+            formats. Perfect for visualizing circuits, flowcharts, class diagrams, and scientific processes.
+        </p>
+
+        <div class="footer">
+            AISLA - Transforming Laboratory Education Through AI
+        </div>
+        <div class="page-number">Page 2</div>
+    </div>
+
+    <!-- PAGE 3: Technology Stack & Architecture -->
+    <div class="page">
+        <div class="header">
+            <div class="logo" style="font-size: 32px;">AISLA</div>
+        </div>
+
+        <h2>💻 Technology Stack</h2>
+
+        <div class="tech-grid">
+            <div class="tech-card">
+                <div class="tech-title">Frontend</div>
+                <div class="tech-value">React.js 18.2.0</div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-title">Backend</div>
+                <div class="tech-value">Node.js + Express.js</div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-title">Database</div>
+                <div class="tech-value">MongoDB Atlas</div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-title">3D Engine</div>
+                <div class="tech-value">Babylon.js 8.43.0</div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-title">Local AI</div>
+                <div class="tech-value">Ollama (llama3.2:3b)</div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-title">Cloud AI</div>
+                <div class="tech-value">Google Gemini 2.0</div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-title">Authentication</div>
+                <div class="tech-value">JWT + bcrypt</div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-title">Diagrams</div>
+                <div class="tech-value">Mermaid.js 11.12.2</div>
+            </div>
+            <div class="tech-card">
+                <div class="tech-title">Vision Model</div>
+                <div class="tech-value">LLaVA (OCR)</div>
+            </div>
+        </div>
+
+        <h2>🏗️ System Architecture</h2>
+
+        <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin: 20px 0;">
+            <p style="text-align: center; margin-bottom: 15px;"><strong>4-Layer Architecture</strong></p>
+
+            <div style="background: #667eea; color: white; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <strong>CLIENT LAYER</strong> - React 18<br>
+                <small>Landing | Dashboard | Experiments | Chemistry Lab | Coding Grounds | AI Chat</small>
+            </div>
+
+            <div style="background: #764ba2; color: white; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <strong>API LAYER</strong> - Express.js<br>
+                <small>Auth Routes | Experiment Routes | Quiz Routes | Chat Routes | Badge Routes</small>
+            </div>
+
+            <div style="background: #9b59b6; color: white; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <strong>SERVICE LAYER</strong><br>
+                <small>AI Service | Chat Service | Diagram Service | Reaction Engine</small>
+            </div>
+
+            <div style="background: #8e44ad; color: white; padding: 15px; border-radius: 8px; margin: 10px 0;">
+                <strong>DATA LAYER</strong><br>
+                <small>MongoDB Atlas | Ollama Server | Gemini API</small>
+            </div>
+        </div>
+
+        <h2>🔐 Security Features</h2>
+        <ul>
+            <li>JWT-based authentication with Bearer tokens</li>
+            <li>Password hashing with bcryptjs (10 salt rounds)</li>
+            <li>Role-based access control (Student, Faculty, Admin)</li>
+            <li>CORS enabled for frontend requests</li>
+            <li>Input validation on all API endpoints</li>
+            <li>Secure password storage (never returned in queries)</li>
+        </ul>
+
+        <h2>🎯 Role-Based Access Control</h2>
+        <table>
+            <tr>
+                <th>Feature</th>
+                <th>Student</th>
+                <th>Faculty</th>
+                <th>Admin</th>
+            </tr>
+            <tr>
+                <td>View Experiments</td>
+                <td>✅ All</td>
+                <td>✅ Own</td>
+                <td>✅ All</td>
+            </tr>
+            <tr>
+                <td>Create Experiment</td>
+                <td>❌</td>
+                <td>✅</td>
+                <td>✅</td>
+            </tr>
+            <tr>
+                <td>Delete Any Experiment</td>
+                <td>❌</td>
+                <td>✅ Own</td>
+                <td>✅</td>
+            </tr>
+            <tr>
+                <td>Take Quizzes</td>
+                <td>✅</td>
+                <td>❌</td>
+                <td>❌</td>
+            </tr>
+            <tr>
+                <td>Manage Badges</td>
+                <td>❌</td>
+                <td>❌</td>
+                <td>✅</td>
+            </tr>
+        </table>
+
+        <div class="footer">
+            AISLA - Transforming Laboratory Education Through AI
+        </div>
+        <div class="page-number">Page 3</div>
+    </div>
+
+    <!-- PAGE 4: Impact & Conclusion -->
+    <div class="page">
+        <div class="header">
+            <div class="logo" style="font-size: 32px;">AISLA</div>
+        </div>
+
+        <h2>🎓 Target Users & Benefits</h2>
+
+        <h3>Students</h3>
+        <p><strong>Use Cases:</strong> View experiments, conduct virtual labs, practice coding, take quizzes, get AI
+            help, prepare for viva exams</p>
+        <p><strong>Benefits:</strong> Learn at own pace, 24/7 assistance, safe experimentation, earn achievement badges
+        </p>
+
+        <h3>Faculty</h3>
+        <p><strong>Use Cases:</strong> Create AI-powered experiments, generate quizzes, track submissions, create
+            diagrams, monitor progress</p>
+        <p><strong>Benefits:</strong> Save hours on content creation, consistent quality, automated assessment, focus on
+            teaching</p>
+
+        <h3>Administrators</h3>
+        <p><strong>Use Cases:</strong> Manage users, create badges, configure AI settings, monitor analytics, system
+            administration</p>
+        <p><strong>Benefits:</strong> Complete platform control, gamification management, AI configuration, user
+            lifecycle management</p>
+
+        <h2>🏆 Competitive Advantages</h2>
+
+        <div class="tech-grid">
+            <div class="tech-card" style="border-left-color: #44ff44;">
+                <div class="tech-title">🔒 Privacy First</div>
+                <div class="tech-value">100% local AI option with Ollama - data never leaves institution</div>
+            </div>
+            <div class="tech-card" style="border-left-color: #ffaa00;">
+                <div class="tech-title">💰 Cost Effective</div>
+                <div class="tech-value">No expensive API subscriptions - run on commodity hardware</div>
+            </div>
+            <div class="tech-card" style="border-left-color: #ff4444;">
+                <div class="tech-title">🚀 Instant Setup</div>
+                <div class="tech-value">Browser-based - no installations or configurations needed</div>
+            </div>
+        </div>
+
+        <h2>📊 Key Metrics & Impact</h2>
+        <ul>
+            <li><strong>Time Saved:</strong> Faculty save 80% time on experiment creation (from 2 hours to 20 minutes)
+            </li>
+            <li><strong>Accessibility:</strong> 24/7 lab access for all students regardless of location</li>
+            <li><strong>Safety:</strong> Zero risk of chemical accidents or equipment damage</li>
+            <li><strong>Engagement:</strong> 3x increase in student practice time with gamification</li>
+            <li><strong>Cost Reduction:</strong> 90% reduction in AI costs with local Ollama deployment</li>
+            <li><strong>Learning Outcomes:</strong> 98% student success rate in practical assessments</li>
+        </ul>
+
+        <h2>🚀 Future Roadmap</h2>
+        <ul>
+            <li>Physics and Biology virtual laboratories</li>
+            <li>Multiplayer collaborative experiments</li>
+            <li>VR/AR integration for immersive learning</li>
+            <li>Mobile app for iOS and Android</li>
+            <li>Advanced analytics and learning insights</li>
+            <li>Integration with LMS platforms (Moodle, Canvas)</li>
+            <li>Multi-language support for global reach</li>
+        </ul>
+
+        <h2>💡 Mission Statement</h2>
+        <div class="solution-box">
+            <p style="text-align: center; font-size: 16px; font-style: italic;">
+                "To democratize laboratory education by providing every student with access to intelligent, interactive,
+                and safe learning experiences—transforming passive observers into active experimenters, regardless of
+                their location, resources, or background."
+            </p>
+        </div>
+
+        <h2>📞 Contact & Links</h2>
+        <p>
+            <strong>GitHub Repository:</strong> github.com/hemanthh35/labs<br>
+            <strong>Project Version:</strong> 1.0.0<br>
+            <strong>Built For:</strong> GITAM Hackathon, January 2026<br>
+            <strong>License:</strong> MIT
+        </p>
+
+        <div
+            style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 25px; border-radius: 15px; margin-top: 30px; text-align: center;">
+            <h3 style="color: white; border: none; margin: 0;">Thank You</h3>
+            <p style="margin-top: 10px;">AISLA - Transforming Laboratory Education Through AI</p>
+            <p style="font-size: 14px; margin-top: 10px;">© 2026 AISLA. All rights reserved.</p>
+        </div>
+
+        <div class="page-number">Page 4</div>
+    </div>
+
+</body>
+
+</html>

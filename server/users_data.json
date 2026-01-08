@@ -1,0 +1,19 @@
+[
+  {
+    "_id": "6939a42fd6aab9fa03be0b5a",
+    "name": "Nadukula Hemanth",
+    "email": "nadukulahemanth3@gmail.com",
+    "createdAt": "2025-12-10T16:47:43.036Z",
+    "__v": 0
+  },
+  {
+    "_id": "6939b77fea937e77d1a36db8",
+    "name": "Test Student",
+    "email": "teststudent@test.com",
+    "role": "student",
+    "department": "Computer Science",
+    "rollNumber": "21CS001",
+    "createdAt": "2025-12-10T18:10:07.438Z",
+    "__v": 0
+  }
+]

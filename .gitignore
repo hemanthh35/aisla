@@ -1,0 +1,53 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.env
+.env.local
+
+# Setup/Config files with secrets
+setupEnv.js
+**/setupEnv.js
+EMAIL_INTEGRATION.md
+GET_GEMINI_API_KEY.md
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Logs
+*.log
+
+# Database
+*.db
+*.sqlite
+
+# Uploads
+uploads/
+temp/
+
+# Build artifacts
+.next/
+out/
+

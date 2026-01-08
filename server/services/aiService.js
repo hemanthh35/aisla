@@ -1,15 +1,78 @@
 /**
- * AISLA AI Service - Ollama-Powered AI Functions
+ * AISLA AI Service - Gemini + Ollama Powered AI Functions
  * 
- * OPTIMIZED FOR SPEED - Uses streaming and parallel generation
+ * OPTIMIZED FOR SPEED - Uses Gemini API (fast cloud) with Ollama fallback
  */
 
 const OLLAMA_URL = process.env.OLLAMA_URL || 'http://localhost:11434';
 const TEXT_MODEL = process.env.OLLAMA_MODEL || 'llama3.2:3b';
 const VISION_MODEL = 'llava:latest';
+const GEMINI_MODEL = 'gemini-2.0-flash';  // Fast Gemini 2.0 model
 
 /**
- * Call Ollama API with SPEED optimizations
+ * Call Gemini API - FAST cloud AI
+ */
+async function callGemini(prompt, systemPrompt = '', options = {}) {
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        console.log('❌ [GEMINI] No API key configured');
+        return { success: false, error: 'Gemini API key not configured' };
+    }
+
+    console.log(`🚀 [GEMINI] Calling model: ${GEMINI_MODEL}`);
+    const startTime = Date.now();
+
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000); // 20 second timeout
+
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: systemPrompt ? `${systemPrompt}\n\n${prompt}` : prompt }]
+                    }],
+                    generationConfig: {
+                        temperature: options.temperature || 0.9,
+                        maxOutputTokens: options.maxTokens || 1024,
+                        topP: 0.95,
+                        topK: 20
+                    }
+                }),
+                signal: controller.signal
+            }
+        );
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+            const errorData = await response.text();
+            console.error(`❌ [GEMINI] API error ${response.status}:`, errorData.substring(0, 200));
+            throw new Error(`Gemini API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        if (!text) {
+            throw new Error('Empty response from Gemini');
+        }
+
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        console.log(`✅ [GEMINI] Response received in ${elapsed}s (${text.length} chars)`);
+
+        return { success: true, text };
+    } catch (error) {
+        console.error('❌ [GEMINI] Call failed:', error.message);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Call Ollama API with SPEED optimizations (fallback)
  */
 async function callOllama(model, prompt, systemPrompt = '', options = {}) {
     try {
@@ -22,12 +85,12 @@ async function callOllama(model, prompt, systemPrompt = '', options = {}) {
                 system: systemPrompt,
                 stream: false,
                 options: {
-                    temperature: options.temperature || 0.5,  // Lower = faster
-                    num_predict: options.maxTokens || 1500,   // Reduced tokens
-                    num_ctx: 2048,      // Smaller context = faster
-                    num_thread: 8,      // Use more CPU threads
-                    top_k: 20,          // Faster sampling
-                    top_p: 0.8,         // Faster sampling
+                    temperature: options.temperature || 0.5,
+                    num_predict: options.maxTokens || 1500,
+                    num_ctx: 2048,
+                    num_thread: 8,
+                    top_k: 20,
+                    top_p: 0.8,
                     repeat_penalty: 1.1,
                     ...options
                 }
@@ -44,6 +107,25 @@ async function callOllama(model, prompt, systemPrompt = '', options = {}) {
         console.error('Ollama call failed:', error.message);
         return { success: false, error: error.message };
     }
+}
+
+/**
+ * Smart AI call - Tries Gemini first (fast), falls back to Ollama
+ */
+async function callAI(prompt, systemPrompt = '', options = {}) {
+    // Try Gemini first (much faster - cloud-based)
+    if (process.env.GEMINI_API_KEY) {
+        console.log('🚀 [AI] Using Gemini API (fast cloud)...');
+        const geminiResult = await callGemini(prompt, systemPrompt, options);
+        if (geminiResult.success) {
+            return geminiResult;
+        }
+        console.log('⚠️ [AI] Gemini failed, falling back to Ollama...');
+    }
+
+    // Fallback to Ollama
+    console.log('🔧 [AI] Using Ollama (local)...');
+    return await callOllama(TEXT_MODEL, prompt, systemPrompt, options);
 }
 
 /**
@@ -75,29 +157,18 @@ export async function generateExperiment(title, rawContent) {
     console.log(`🧪 [AI] Generating experiment: ${title}`);
     const startTime = Date.now();
 
-    const prompt = `Create a JSON experiment for: ${title}
+    const prompt = `Generate experiment JSON for: "${title}"
 
-INPUT: ${rawContent.substring(0, 1500)}
+Context: ${rawContent.substring(0, 800)}
 
-Return ONLY this JSON (fill each field with 1-3 sentences):
-{
-"aim": "objective",
-"theory": "explanation in 2-3 sentences",
-"apparatus": ["item1", "item2"],
-"procedure": ["step1", "step2", "step3"],
-"keyFormulas": ["formula1"],
-"example": "one example",
-"observations": "what to observe",
-"result": "expected result",
-"precautions": ["precaution1"],
-"commonMistakes": ["mistake1"],
-"realWorldUse": ["application1"],
-"summary": "one line summary"
-}`;
+JSON format:
+{"aim":"1 sentence","theory":"2 sentences","apparatus":["3 items"],"procedure":["3 steps"],"keyFormulas":[],"example":"brief","observations":"brief","result":"brief","precautions":["2 items"],"commonMistakes":["2 items"],"realWorldUse":["2 items"],"summary":"1 sentence"}
 
-    const system = `You are a concise science teacher. Return ONLY valid JSON. Be brief but accurate.`;
+Return ONLY valid JSON, no explanation.`;
 
-    const result = await callOllama(TEXT_MODEL, prompt, system, { maxTokens: 1200 });
+    const system = `Expert science teacher. Output: valid JSON only. Be concise.`;
+
+    const result = await callAI(prompt, system, { maxTokens: 800, temperature: 0.9 });
 
     const elapsed = Math.round((Date.now() - startTime) / 1000);
     console.log(`✅ [AI] Generation took ${elapsed}s`);
@@ -312,7 +383,7 @@ export async function streamExplanation(res, content, intent = 'simple') {
 
 /**
  * Generate quiz questions from experiment content
- * OPTIMIZED FOR SPEED
+ * OPTIMIZED FOR SPEED - Uses Gemini API (faster than Ollama)
  */
 export async function generateQuiz(experiment) {
     console.log(`📝 [AI] Generating quiz for: ${experiment.title}`);
@@ -323,18 +394,17 @@ export async function generateQuiz(experiment) {
         : JSON.stringify(experiment.content);
 
     // OPTIMIZED: Shorter prompt, less content, focus on essentials
-    const prompt = `Create 5 MCQ questions for: ${experiment.title}
+    const prompt = `Generate 5 MCQ questions for: "${experiment.title}"
 
-Content: ${experimentContent.substring(0, 1000)}
+Content: ${experimentContent.substring(0, 600)}
 
-Return JSON array:
-[{"type":"mcq","question":"Q?","options":["A","B","C","D"],"answer":"A","explanation":"Why"}]
+JSON format: [{"type":"mcq","question":"Q?","options":["A","B","C","D"],"answer":"A","explanation":"brief"}]
 
-Make questions clear and concise.`;
+Return valid JSON only.`;
 
-    const result = await callOllama(TEXT_MODEL, prompt,
-        'You are a quiz creator. Return JSON only.',
-        { maxTokens: 800 }  // REDUCED from 2500 to 800 for speed
+    const result = await callAI(prompt,
+        'Quiz expert. Output: JSON array only.',
+        { maxTokens: 600, temperature: 0.9 }  // FAST settings
     );
 
     const elapsed = Math.round((Date.now() - startTime) / 1000);
@@ -579,9 +649,9 @@ User wants: ${description}
 
 Generate the ${format} code now:`;
 
-    const result = await callOllama(TEXT_MODEL, systemPrompt, '', {
-        temperature: 0.2,
-        maxTokens: 1500
+    const result = await callAI(systemPrompt, '', {
+        temperature: 0.8,
+        maxTokens: 800  // REDUCED from 1500 for speed
     });
 
     if (!result.success) {
@@ -805,8 +875,127 @@ Return ONLY the JSON, no other text.`;
     };
 }
 
+/**
+ * Generate a complete experiment from just a topic name
+ * The AI will create all content including theory, procedure, formulas, etc.
+ * @param {string} topicName - The experiment topic/title
+ * @param {string} subject - Optional subject area (Physics, Chemistry, etc.)
+ * @param {string} difficulty - beginner, intermediate, or advanced
+ */
+export async function generateExperimentFromTopic(topicName, subject = '', difficulty = 'intermediate') {
+    console.log(`🎯 [AI] Generating complete experiment from topic: ${topicName}`);
+    const startTime = Date.now();
+
+    const difficultyContext = {
+        beginner: 'Use simple language, basic concepts, and straightforward procedures suitable for beginners.',
+        intermediate: 'Use standard technical terminology and moderate complexity suitable for students with some background.',
+        advanced: 'Include advanced concepts, detailed mathematical derivations, and complex procedures for advanced students.'
+    };
+
+    const subjectContext = subject ? `This is a ${subject} experiment.` : '';
+
+    const prompt = `You are an expert science educator. Generate a COMPLETE, DETAILED experiment for the topic: "${topicName}"
+
+${subjectContext}
+${difficultyContext[difficulty] || difficultyContext.intermediate}
+
+Create a comprehensive experiment with rich, educational content. Return ONLY valid JSON in this exact format:
+
+{
+    "aim": "A clear, detailed objective statement (2-3 sentences explaining what students will learn and achieve)",
+    "theory": "Comprehensive theoretical background (4-6 sentences explaining the underlying scientific principles, laws, and concepts. Include relevant definitions and explain why this experiment is important.)",
+    "apparatus": ["List", "of", "all", "required", "equipment", "and", "materials", "with", "specifications", "where", "applicable"],
+    "procedure": [
+        "Step 1: Detailed first step with specific instructions",
+        "Step 2: Second step with measurements or observations to note",
+        "Step 3: Continue with clear, numbered steps",
+        "Step 4: Include timing, quantities, and safety notes where needed",
+        "Step 5: Final steps leading to completion"
+    ],
+    "keyFormulas": [
+        "Formula 1 with variable descriptions (e.g., V = IR where V is voltage, I is current, R is resistance)",
+        "Additional relevant formulas if applicable"
+    ],
+    "example": "A worked numerical example showing how to apply the formulas with actual numbers and step-by-step calculations. Include given values, formula application, and final answer with units.",
+    "observations": "Detailed description of what students should observe during the experiment. Include expected readings, color changes, reactions, or measurements they should record in their observation table.",
+    "result": "Expected results with typical values or ranges. Explain how to interpret the results and what conclusions can be drawn from them.",
+    "precautions": [
+        "Important safety precaution 1",
+        "Handling precaution 2", 
+        "Accuracy-related precaution 3",
+        "Equipment care precaution 4"
+    ],
+    "commonMistakes": [
+        "Common mistake 1 and how to avoid it",
+        "Common mistake 2 and correct approach",
+        "Typical error 3 students make"
+    ],
+    "realWorldUse": [
+        "Real-world application 1 explaining where this concept is used in industry or daily life",
+        "Application 2 with practical relevance",
+        "Application 3 connecting theory to real scenarios"
+    ],
+    "summary": "A concise 2-3 sentence summary of the experiment, its significance, and key takeaways for students."
+}
+
+IMPORTANT: Generate detailed, accurate, educational content. Do not use placeholders. Fill every field with substantive content relevant to "${topicName}".`;
+
+    const system = `You are an experienced science teacher and curriculum designer. Create educational, accurate, and engaging experiment content. Always return valid JSON only, no additional text or markdown.`;
+
+    const result = await callAI(prompt, system, {
+        maxTokens: 2500,
+        temperature: 0.6
+    });
+
+    const elapsed = Math.round((Date.now() - startTime) / 1000);
+    console.log(`✅ [AI] Topic-based generation took ${elapsed}s`);
+
+    if (!result.success) {
+        return { success: false, error: result.error };
+    }
+
+    let content = parseJSON(result.text);
+
+    // Ensure all fields exist with proper defaults
+    if (content) {
+        content = {
+            aim: content.aim || `To study and understand ${topicName}`,
+            theory: content.theory || `This experiment explores the concepts related to ${topicName}. The theoretical background provides foundation for understanding the practical aspects.`,
+            apparatus: Array.isArray(content.apparatus) ? content.apparatus : ['Standard laboratory equipment'],
+            procedure: Array.isArray(content.procedure) ? content.procedure : ['Follow the standard procedure for this experiment'],
+            keyFormulas: Array.isArray(content.keyFormulas) ? content.keyFormulas : [],
+            example: content.example || 'See the procedure for a practical example of this experiment.',
+            observations: content.observations || 'Record all observations carefully in your lab notebook.',
+            result: content.result || 'Analyze your observations and draw conclusions based on the theoretical predictions.',
+            precautions: Array.isArray(content.precautions) ? content.precautions : ['Follow all safety guidelines'],
+            commonMistakes: Array.isArray(content.commonMistakes) ? content.commonMistakes : ['Read instructions carefully before proceeding'],
+            realWorldUse: Array.isArray(content.realWorldUse) ? content.realWorldUse : ['This concept has various real-world applications'],
+            summary: content.summary || `This experiment demonstrates key concepts related to ${topicName}.`
+        };
+    } else {
+        // Fallback content structure
+        content = {
+            aim: `To study and understand ${topicName}`,
+            theory: `This experiment covers the fundamental concepts of ${topicName}. Please refer to your textbook for detailed theoretical background.`,
+            apparatus: ['Laboratory equipment as required'],
+            procedure: ['Follow the standard experimental procedure', 'Record all observations', 'Analyze results'],
+            keyFormulas: [],
+            example: 'Refer to worked examples in your textbook',
+            observations: 'Record observations in tabular format',
+            result: 'Compare experimental values with theoretical predictions',
+            precautions: ['Handle all equipment carefully', 'Follow safety guidelines'],
+            commonMistakes: ['Ensure proper calibration', 'Take multiple readings'],
+            realWorldUse: ['Various industrial and scientific applications'],
+            summary: `This experiment helps understand ${topicName} through practical demonstration.`
+        };
+    }
+
+    return { success: true, content, elapsed, generatedFromTopic: true };
+}
+
 export default {
     generateExperiment,
+    generateExperimentFromTopic,
     generateExplanation,
     streamExplanation,
     generateQuiz,

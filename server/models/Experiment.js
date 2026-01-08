@@ -11,7 +11,7 @@ const experimentSchema = new mongoose.Schema({
     originalContent: {
         type: {
             type: String,
-            enum: ['text', 'pdf', 'image'],
+            enum: ['text', 'pdf', 'image', 'topic'],  // Added 'topic' for quick generate
             default: 'text'
         },
         text: String,

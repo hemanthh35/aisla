@@ -1,6 +1,7 @@
 // Authentication controller with register, login, and getMe functions
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
+import emailService from '../services/emailService.js';
 
 // Generate JWT token
 const generateToken = (id) => {
@@ -58,6 +59,15 @@ const registerUser = async (req, res) => {
     const user = await User.create(userData);
 
     if (user) {
+      // Send welcome email (async, non-blocking)
+      emailService.sendWelcomeEmail(user.email, user.name, user.role)
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ Welcome email sent to ${user.email}`);
+          }
+        })
+        .catch(err => console.error('❌ Welcome email error:', err));
+
       res.status(201).json({
         _id: user._id,
         name: user.name,

@@ -13,6 +13,8 @@ env/
 # Setup/Config files with secrets
 setupEnv.js
 **/setupEnv.js
+EMAIL_INTEGRATION.md
+GET_GEMINI_API_KEY.md
 
 # Node
 node_modules/

@@ -272,6 +272,24 @@ const Landing = () => {
                 </div>
             </section>
 
+            {/* Trusted By / Partners Section */}
+            <section className="partners">
+                <div className="partners-content">
+                    <p className="partners-label">Trusted By Leading Institutions</p>
+                    <div className="partners-logos">
+                        <div className="partner-logo">
+                            <img src="/gitam-logo.png" alt="GITAM - Deemed to be University" />
+                        </div>
+                        <div className="partner-logo">
+                            <img src="/auisc-logo.png" alt="AUISC - Innovate Today, Impact Tomorrow" />
+                        </div>
+                        <div className="partner-logo">
+                            <img src="/anurag-logo.png" alt="Anurag University" />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
             {/* Features Section */}
             <section className="features" id="features">
                 <div className="features-bg"></div>

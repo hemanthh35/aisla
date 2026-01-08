@@ -106,6 +106,225 @@
     margin-bottom: 1.5rem;
 }
 
+/* Mode Toggle */
+.mode-toggle-container {
+    max-width: 800px;
+    margin: 0 auto 2rem;
+    text-align: center;
+}
+
+.mode-toggle {
+    display: inline-flex;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius-xl);
+    padding: 4px;
+    gap: 4px;
+}
+
+.mode-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--neutral-400);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.mode-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.mode-btn:hover:not(.active) {
+    color: var(--neutral-200);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.mode-btn.active {
+    color: white;
+    background: var(--gradient-primary);
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+}
+
+.mode-description {
+    font-size: 0.875rem;
+    color: var(--neutral-400);
+    margin-top: 1rem;
+}
+
+/* Quick Mode Styles */
+.form-input-large {
+    font-size: 1.125rem;
+    padding: 1rem 1.25rem;
+}
+
+.input-hint {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    margin-top: 0.5rem;
+}
+
+.ai-feature-box {
+    display: flex;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.08) 0%, rgba(99, 102, 241, 0.08) 100%);
+    border: 1px solid rgba(0, 212, 255, 0.15);
+    border-radius: var(--radius-xl);
+    margin: 2rem 0;
+}
+
+.ai-feature-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, #00d4ff 0%, #6366f1 100%);
+    border-radius: var(--radius-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    animation: pulse-glow 2s infinite;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+    }
+}
+
+.ai-feature-icon svg {
+    width: 28px;
+    height: 28px;
+    color: white;
+}
+
+.ai-feature-content h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-100);
+    margin-bottom: 0.75rem;
+}
+
+.ai-feature-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+}
+
+.ai-feature-content li {
+    font-size: 0.8125rem;
+    color: var(--neutral-300);
+    padding-left: 1.25rem;
+    position: relative;
+}
+
+.ai-feature-content li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #00d4ff;
+    font-weight: bold;
+}
+
+/* Large Buttons */
+.btn-large {
+    padding: 1rem 2rem;
+    font-size: 1rem;
+}
+
+/* Quick Review Section */
+.quick-review {
+    text-align: center;
+    padding: 2rem;
+}
+
+.review-topic {
+    margin-bottom: 1.5rem;
+}
+
+.review-value-large {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--neutral-100);
+    margin-top: 0.5rem;
+    background: linear-gradient(135deg, #00d4ff 0%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.review-row {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+}
+
+.review-row .review-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    border-bottom: none;
+    padding: 0;
+}
+
+/* Quick AI Info */
+.quick-ai-info {
+    padding: 1.5rem;
+    text-align: center;
+    flex-direction: column;
+    align-items: center;
+}
+
+.quick-ai-info .ai-icon {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 1rem;
+}
+
+.quick-ai-info .ai-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+.quick-ai-info .ai-text {
+    text-align: center;
+}
+
+.quick-ai-info .ai-text h4 {
+    font-size: 1.125rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Step Title with Icon */
+.step-title {
+    display: flex;
+    align-items: center;
+    font-family: var(--font-display);
+    font-size: 1.375rem;
+    font-weight: 600;
+    color: var(--neutral-100);
+    margin-bottom: 0.5rem;
+}
+
 /* Form Card */
 .create-form-card {
     max-width: 800px;

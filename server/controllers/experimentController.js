@@ -1,6 +1,8 @@
 // Experiment controller - CRUD operations
 import Experiment from '../models/Experiment.js';
+import User from '../models/User.js';
 import aiService from '../services/aiService.js';
+import emailService from '../services/emailService.js';
 
 // @desc    Create new experiment with AI generation
 // @route   POST /api/experiment/create
@@ -41,6 +43,38 @@ const createExperiment = async (req, res) => {
             difficulty: difficulty || 'intermediate',
             createdBy: req.user._id
         });
+
+        // Send email notifications to all students (async, don't wait)
+        try {
+            // Get all student emails
+            const students = await User.find({ role: 'student' }).select('email');
+            const studentEmails = students.map(student => student.email);
+
+            if (studentEmails.length > 0) {
+                console.log(`📧 Sending notification emails to ${studentEmails.length} students...`);
+                
+                // Send emails asynchronously
+                emailService.sendNewExperimentNotification(
+                    studentEmails,
+                    experiment,
+                    {
+                        name: req.user.name,
+                        email: req.user.email
+                    }
+                ).then(result => {
+                    if (result.success) {
+                        console.log(`✅ Successfully sent ${result.recipients} notification emails`);
+                    } else {
+                        console.error('❌ Email notification failed:', result.error);
+                    }
+                }).catch(err => {
+                    console.error('❌ Email notification error:', err);
+                });
+            }
+        } catch (emailError) {
+            // Log error but don't fail the request
+            console.error('Email notification error (non-blocking):', emailError);
+        }
 
         res.status(201).json({
             success: true,

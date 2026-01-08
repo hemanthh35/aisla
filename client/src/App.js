@@ -1,32 +1,32 @@
 // Main App component with routing and authentication context
-import React from "react";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-import Landing from "./pages/Landing";
-import Register from "./pages/Register";
-import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
-import CreateExperiment from "./pages/CreateExperiment";
-import ExperimentView from "./pages/ExperimentView";
-import QuizPage from "./pages/QuizPage";
-import ResultPage from "./pages/ResultPage";
-import BadgeManagement from "./pages/BadgeManagement";
-import DiagramGenerator from "./pages/DiagramGenerator";
-import CodingGrounds from "./pages/CodingGrounds";
-import AISettings from "./pages/AISettings";
-import ChemistryLab from "./pages/ChemistryLab";
-import ChemistryLabAR from "./pages/ChemistryLabAR";
-import ARChemistryLabCamera from "./pages/ARChemistryLabCamera";
-import PhysicsLab from "./pages/PhysicsLab";
-import ClassManagement from "./pages/ClassManagement";
-import ClassDetails from "./pages/ClassDetails";
-import PrivateRoute from "./components/PrivateRoute";
-import "./App.css";
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import Landing from './pages/Landing';
+import Register from './pages/Register';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import StudentDashboard from './pages/StudentDashboard';
+import FacultyDashboard from './pages/FacultyDashboard';
+import CreateExperiment from './pages/CreateExperiment';
+import ExperimentView from './pages/ExperimentView';
+import QuizPage from './pages/QuizPage';
+import ResultPage from './pages/ResultPage';
+import BadgeManagement from './pages/BadgeManagement';
+import DiagramGenerator from './pages/DiagramGenerator';
+import CodingGrounds from './pages/CodingGrounds';
+import AISettings from './pages/AISettings';
+import ChemistryLab from './pages/ChemistryLab';
+import ChemistryLabAR from './pages/ChemistryLabAR';
+import ARChemistryLabCamera from './pages/ARChemistryLabCamera';
+import PrivateRoute from './components/PrivateRoute';
+import './App.css';
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
+      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <div className="App">
           <Routes>
             {/* Landing page as home */}
@@ -42,6 +42,36 @@ function App() {
               element={
                 <PrivateRoute>
                   <Dashboard />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Admin Dashboard */}
+            <Route
+              path="/admin-dashboard"
+              element={
+                <PrivateRoute>
+                  <AdminDashboard />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Student Dashboard */}
+            <Route
+              path="/student-dashboard"
+              element={
+                <PrivateRoute>
+                  <StudentDashboard />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Faculty Dashboard */}
+            <Route
+              path="/faculty-dashboard"
+              element={
+                <PrivateRoute>
+                  <FacultyDashboard />
                 </PrivateRoute>
               }
             />
@@ -152,36 +182,6 @@ function App() {
               element={
                 <PrivateRoute>
                   <ARChemistryLabCamera />
-                </PrivateRoute>
-              }
-            />
-
-            {/* Virtual Physics Lab */}
-            <Route
-              path="/physics-lab"
-              element={
-                <PrivateRoute>
-                  <PhysicsLab />
-                </PrivateRoute>
-              }
-            />
-
-            {/* Class Management (Faculty) */}
-            <Route
-              path="/class-management"
-              element={
-                <PrivateRoute>
-                  <ClassManagement />
-                </PrivateRoute>
-              }
-            />
-
-            {/* Class Details (Analytics) */}
-            <Route
-              path="/class/:id"
-              element={
-                <PrivateRoute>
-                  <ClassDetails />
                 </PrivateRoute>
               }
             />

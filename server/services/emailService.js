@@ -1,14 +1,22 @@
 // Email Service - SendGrid integration for notifications
 import sgMail from '@sendgrid/mail';
 
-// Initialize SendGrid with API key
-if (!process.env.SENDGRID_API_KEY) {
-    console.warn('⚠️ WARNING: SENDGRID_API_KEY is not set in environment variables. Email notifications will not work.');
-    console.warn('📧 To enable email notifications, add SENDGRID_API_KEY to your server/.env file');
-} else {
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
-    console.log('✅ SendGrid initialized with API key');
-}
+// Initialize SendGrid with API key when available
+// This check is deferred to ensure dotenv is loaded
+const initializeEmailService = () => {
+    if (process.env.SENDGRID_API_KEY) {
+        sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+        console.log('✅ SendGrid initialized successfully');
+        return true;
+    } else {
+        console.warn('⚠️ WARNING: SENDGRID_API_KEY is not set in environment variables. Email notifications will not work.');
+        console.warn('📧 To enable email notifications, add SENDGRID_API_KEY to your server/.env file');
+        return false;
+    }
+};
+
+// Initialize on first use
+let isInitialized = false;
 
 /**
  * Send email notification to multiple recipients
@@ -19,6 +27,12 @@ if (!process.env.SENDGRID_API_KEY) {
  */
 const sendBulkEmail = async (recipients, subject, htmlContent, textContent) => {
     try {
+        // Initialize on first use
+        if (!isInitialized) {
+            initializeEmailService();
+            isInitialized = true;
+        }
+
         // Check if API key is configured
         if (!process.env.SENDGRID_API_KEY) {
             console.error('❌ SENDGRID_API_KEY is not configured. Email notifications disabled.');

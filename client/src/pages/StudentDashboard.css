@@ -1,9 +1,21 @@
 /* AISLA - Student Dashboard Styles */
 
+/* Color Variables */
+:root {
+    --neutral-100: #f4f4f5;
+    --neutral-400: #a1a1aa;
+    --neutral-500: #71717a;
+    --neutral-600: #52525b;
+    --neutral-700: #3f3f46;
+    --neutral-800: #27272a;
+    --neutral-900: #18181b;
+}
+
 .student-dashboard {
     display: flex;
     min-height: 100vh;
     background: linear-gradient(135deg, #0a0a0f 0%, #111118 50%, #0d0d14 100%);
+    color: white;
 }
 
 /* Sidebar Overlay */
@@ -201,30 +213,6 @@
     position: sticky;
     top: 0;
     z-index: 100;
-}
-
-/* Topbar Logos - Centered */
-.topbar-logos {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.topbar-logo {
-    height: 36px;
-    width: auto;
-    object-fit: contain;
-    filter: brightness(0) invert(1);
-    opacity: 0.85;
-    transition: all 0.3s ease;
-}
-
-.topbar-logo:hover {
-    opacity: 1;
-    transform: scale(1.08);
 }
 
 .topbar-left {

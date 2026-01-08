@@ -7,6 +7,8 @@ import Register from './pages/Register';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import StudentDashboard from './pages/StudentDashboard';
+import FacultyDashboard from './pages/FacultyDashboard';
 import CreateExperiment from './pages/CreateExperiment';
 import ExperimentView from './pages/ExperimentView';
 import QuizPage from './pages/QuizPage';
@@ -50,6 +52,26 @@ function App() {
               element={
                 <PrivateRoute>
                   <AdminDashboard />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Student Dashboard */}
+            <Route
+              path="/student-dashboard"
+              element={
+                <PrivateRoute>
+                  <StudentDashboard />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Faculty Dashboard */}
+            <Route
+              path="/faculty-dashboard"
+              element={
+                <PrivateRoute>
+                  <FacultyDashboard />
                 </PrivateRoute>
               }
             />

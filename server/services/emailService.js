@@ -2,7 +2,13 @@
 import sgMail from '@sendgrid/mail';
 
 // Initialize SendGrid with API key
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+if (!process.env.SENDGRID_API_KEY) {
+    console.warn('⚠️ WARNING: SENDGRID_API_KEY is not set in environment variables. Email notifications will not work.');
+    console.warn('📧 To enable email notifications, add SENDGRID_API_KEY to your server/.env file');
+} else {
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+    console.log('✅ SendGrid initialized with API key');
+}
 
 /**
  * Send email notification to multiple recipients
@@ -13,6 +19,15 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
  */
 const sendBulkEmail = async (recipients, subject, htmlContent, textContent) => {
     try {
+        // Check if API key is configured
+        if (!process.env.SENDGRID_API_KEY) {
+            console.error('❌ SENDGRID_API_KEY is not configured. Email notifications disabled.');
+            return { 
+                success: false, 
+                error: 'Email service not configured. Please add SENDGRID_API_KEY to server/.env'
+            };
+        }
+
         if (!recipients || recipients.length === 0) {
             console.log('⚠️ No recipients provided for email');
             return { success: false, message: 'No recipients' };
@@ -40,7 +55,7 @@ const sendBulkEmail = async (recipients, subject, htmlContent, textContent) => {
         // Send email
         const response = await sgMail.send(msg);
         console.log(`✅ Email sent successfully to ${recipients.length} recipients`);
-        
+
         return {
             success: true,
             message: `Email sent to ${recipients.length} students`,
@@ -48,11 +63,11 @@ const sendBulkEmail = async (recipients, subject, htmlContent, textContent) => {
         };
     } catch (error) {
         console.error('❌ SendGrid Error:', error);
-        
+
         if (error.response) {
             console.error('SendGrid Response:', error.response.body);
         }
-        
+
         return {
             success: false,
             error: error.message
@@ -69,7 +84,7 @@ const sendBulkEmail = async (recipients, subject, htmlContent, textContent) => {
 const sendNewExperimentNotification = async (studentEmails, experiment, creator) => {
     try {
         const subject = `🔬 New Experiment Available: ${experiment.title}`;
-        
+
         // HTML Email Template
         const htmlContent = `
 <!DOCTYPE html>
@@ -268,7 +283,7 @@ AISLA - AI Self-Learning Lab Assistant
 const sendWelcomeEmail = async (email, name, role) => {
     try {
         const subject = '🎉 Welcome to AISLA - AI Self-Learning Lab Assistant!';
-        
+
         const htmlContent = `
 <!DOCTYPE html>
 <html>

@@ -11,7 +11,9 @@ import {
     extractText
 } from '../controllers/experimentController.js';
 import Experiment from '../models/Experiment.js';
+import User from '../models/User.js';
 import aiService from '../services/aiService.js';
+import emailService from '../services/emailService.js';
 
 const router = express.Router();
 
@@ -127,6 +129,27 @@ router.post('/generate-from-topic', async (req, res) => {
 
         res.end();
         console.log(`✅ [API] Topic-based experiment created in ${totalTime}s: ${experiment.title}`);
+
+        // Send email notification to all students (async - don't wait)
+        try {
+            const students = await User.find({ role: 'student' }).select('email');
+            const studentEmails = students.map(s => s.email).filter(e => e);
+
+            if (studentEmails.length > 0) {
+                console.log(`📧 Sending notification to ${studentEmails.length} students...`);
+                emailService.sendNewExperimentNotification(studentEmails, experiment, req.user)
+                    .then(result => {
+                        if (result.success) {
+                            console.log(`✅ Email sent to ${result.recipients} students`);
+                        } else {
+                            console.log(`⚠️ Email failed: ${result.error}`);
+                        }
+                    })
+                    .catch(err => console.error('Email error:', err.message));
+            }
+        } catch (emailError) {
+            console.error('Error fetching students for email:', emailError.message);
+        }
 
     } catch (error) {
         console.error('Generate from topic error:', error);

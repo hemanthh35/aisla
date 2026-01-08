@@ -1,5 +1,6 @@
 // Admin Routes - User and Submission Management
 import express from 'express';
+import bcrypt from 'bcryptjs';
 import { protect } from '../middleware/authMiddleware.js';
 import User from '../models/User.js';
 import Submission from '../models/Submission.js';
@@ -15,10 +16,18 @@ const adminOnly = (req, res, next) => {
     next();
 };
 
+// Middleware to allow faculty and admin to view data
+const facultyOrAdminView = (req, res, next) => {
+    if (req.user.role !== 'admin' && req.user.role !== 'faculty') {
+        return res.status(403).json({ message: 'Faculty or Admin access required' });
+    }
+    next();
+};
+
 // @route   GET /api/admin/users
 // @desc    Get all users with optional role filter
-// @access  Admin only
-router.get('/users', protect, adminOnly, async (req, res) => {
+// @access  Admin or Faculty
+router.get('/users', protect, facultyOrAdminView, async (req, res) => {
     try {
         const { role } = req.query;
 
@@ -542,6 +551,183 @@ router.get('/chart-data', protect, adminOnly, async (req, res) => {
     } catch (error) {
         console.error('Error fetching chart data:', error);
         res.status(500).json({ message: 'Failed to fetch chart data' });
+    }
+});
+
+// Middleware to allow faculty and admin
+const facultyOrAdmin = (req, res, next) => {
+    if (req.user.role !== 'admin' && req.user.role !== 'faculty') {
+        return res.status(403).json({ message: 'Faculty or Admin access required' });
+    }
+    next();
+};
+
+// @route   POST /api/admin/users
+// @desc    Create a new user (student/faculty)
+// @access  Admin or Faculty
+router.post('/users', protect, facultyOrAdmin, async (req, res) => {
+    try {
+        const { name, email, password, role, rollNumber } = req.body;
+
+        // Validate required fields
+        if (!name || !email || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Name, email, and password are required'
+            });
+        }
+
+        // Only allow creating students for faculty, admins can create any role
+        const allowedRole = req.user.role === 'admin' ? (role || 'student') : 'student';
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email: email.toLowerCase() });
+        if (existingUser) {
+            return res.status(400).json({
+                success: false,
+                message: 'User with this email already exists'
+            });
+        }
+
+        // Hash password
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        // Create user
+        const newUser = await User.create({
+            name,
+            email: email.toLowerCase(),
+            password: hashedPassword,
+            role: allowedRole,
+            rollNumber: rollNumber || undefined
+        });
+
+        console.log(`✅ [Admin] Created new ${allowedRole}: ${email}`);
+
+        res.status(201).json({
+            success: true,
+            message: `${allowedRole.charAt(0).toUpperCase() + allowedRole.slice(1)} created successfully`,
+            user: {
+                _id: newUser._id,
+                name: newUser.name,
+                email: newUser.email,
+                role: newUser.role,
+                rollNumber: newUser.rollNumber,
+                createdAt: newUser.createdAt
+            }
+        });
+
+    } catch (error) {
+        console.error('Error creating user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to create user',
+            error: error.message
+        });
+    }
+});
+
+// @route   DELETE /api/admin/users/:id
+// @desc    Delete a user
+// @access  Faculty or Admin
+router.delete('/users/:id', protect, facultyOrAdminView, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Find user
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Prevent deleting yourself
+        if (user._id.toString() === req.user._id.toString()) {
+            return res.status(400).json({
+                success: false,
+                message: 'You cannot delete your own account'
+            });
+        }
+
+        // Prevent deleting other admins (optional safety)
+        if (user.role === 'admin' && req.user.role !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Cannot delete admin users'
+            });
+        }
+
+        // Delete user's submissions
+        await Submission.deleteMany({ userId: id });
+
+        // Delete user
+        await User.findByIdAndDelete(id);
+
+        console.log(`🗑️ [Admin] Deleted user: ${user.email}`);
+
+        res.json({
+            success: true,
+            message: `User ${user.name} deleted successfully`
+        });
+
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete user',
+            error: error.message
+        });
+    }
+});
+
+// @route   PUT /api/admin/users/:id
+// @desc    Update a user's role or details
+// @access  Admin only
+router.put('/users/:id', protect, adminOnly, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, email, role, rollNumber } = req.body;
+
+        // Find user
+        const user = await User.findById(id);
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: 'User not found'
+            });
+        }
+
+        // Update fields
+        if (name) user.name = name;
+        if (email) user.email = email.toLowerCase();
+        if (role && ['student', 'faculty', 'admin'].includes(role)) user.role = role;
+        if (rollNumber !== undefined) user.rollNumber = rollNumber;
+
+        await user.save();
+
+        console.log(`✏️ [Admin] Updated user: ${user.email}`);
+
+        res.json({
+            success: true,
+            message: 'User updated successfully',
+            user: {
+                _id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
+                rollNumber: user.rollNumber
+            }
+        });
+
+    } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update user',
+            error: error.message
+        });
     }
 });
 

@@ -246,7 +246,7 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            await axios.post('/api/admin/user', createForm, {
+            await axios.post('/api/admin/users', createForm, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -274,7 +274,7 @@ const AdminDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            await axios.delete(`/api/admin/user/${selectedUser._id}`, {
+            await axios.delete(`/api/admin/users/${selectedUser._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -441,11 +441,6 @@ const AdminDashboard = () => {
                         </button>
                         <h1 className="topbar-title">Admin Dashboard</h1>
                         <span className="admin-badge">Administrator</span>
-                    </div>
-                    <div className="topbar-logos">
-                        <img src="/auisc-logo.png" alt="AUISC" className="topbar-logo" />
-                        <img src="/gitam-logo.png" alt="GITAM" className="topbar-logo" />
-                        <img src="/anurag-logo.png" alt="Anurag University" className="topbar-logo" />
                     </div>
                     <div className="topbar-right">
                         <button className="refresh-btn" onClick={fetchData} disabled={loading}>

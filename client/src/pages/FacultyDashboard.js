@@ -53,6 +53,19 @@ const FacultyDashboard = () => {
         passRate: 0
     });
 
+    // Modal states
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [formLoading, setFormLoading] = useState(false);
+    const [formError, setFormError] = useState('');
+    const [addForm, setAddForm] = useState({
+        name: '',
+        email: '',
+        password: '',
+        rollNumber: ''
+    });
+
     // Check access
     useEffect(() => {
         if (user && user.role === 'student') {
@@ -220,7 +233,54 @@ const FacultyDashboard = () => {
         });
     };
 
+    // Add student handler
+    const handleAddStudent = async (e) => {
+        e.preventDefault();
+        setFormError('');
+        setFormLoading(true);
+
+        try {
+            const token = localStorage.getItem('token');
+            await axios.post('/api/admin/users', {
+                ...addForm,
+                role: 'student'
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            setShowAddModal(false);
+            setAddForm({ name: '', email: '', password: '', rollNumber: '' });
+            fetchData();
+        } catch (err) {
+            setFormError(err.response?.data?.message || 'Failed to add student');
+        } finally {
+            setFormLoading(false);
+        }
+    };
+
+    // Delete student handler
+    const handleDeleteStudent = async () => {
+        if (!selectedStudent) return;
+        setFormLoading(true);
+
+        try {
+            const token = localStorage.getItem('token');
+            await axios.delete(`/api/admin/users/${selectedStudent._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            setShowDeleteModal(false);
+            setSelectedStudent(null);
+            fetchData();
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to delete student');
+        } finally {
+            setFormLoading(false);
+        }
+    };
+
     const isFaculty = user?.role === 'faculty' || user?.role === 'admin';
+    const isAdmin = user?.role === 'admin';
 
     if (!user || !isFaculty) {
         return null;
@@ -307,11 +367,6 @@ const FacultyDashboard = () => {
                         </button>
                         <h1 className="topbar-title">Faculty Dashboard</h1>
                         <span className="faculty-badge">{user?.role === 'admin' ? 'Admin' : 'Faculty'}</span>
-                    </div>
-                    <div className="topbar-logos">
-                        <img src="/auisc-logo.png" alt="AUISC" className="topbar-logo" />
-                        <img src="/gitam-logo.png" alt="GITAM" className="topbar-logo" />
-                        <img src="/anurag-logo.png" alt="Anurag University" className="topbar-logo" />
                     </div>
                     <div className="topbar-right">
                         <button className="refresh-btn" onClick={fetchData} disabled={loading}>
@@ -502,6 +557,10 @@ const FacultyDashboard = () => {
                         <section className="students-section">
                             <div className="section-header">
                                 <h3>All Students ({students.length})</h3>
+                                <button className="add-student-btn" onClick={() => setShowAddModal(true)}>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="16" /><line x1="8" y1="12" x2="16" y2="12" /></svg>
+                                    Add Student
+                                </button>
                             </div>
                             <div className="students-table">
                                 <div className="table-header">
@@ -509,10 +568,10 @@ const FacultyDashboard = () => {
                                     <span>Email</span>
                                     <span>Quizzes</span>
                                     <span>Avg Score</span>
-                                    <span>Joined</span>
+                                    <span>Actions</span>
                                 </div>
                                 {students.length === 0 ? (
-                                    <div className="empty-state">No students found</div>
+                                    <div className="empty-state">No students found. Click "Add Student" to create one.</div>
                                 ) : students.map(student => {
                                     const studentSubs = submissions.filter(s =>
                                         (s.userId?._id || s.userId) === student._id
@@ -531,7 +590,15 @@ const FacultyDashboard = () => {
                                             <span className={`score-cell ${avg >= 70 ? 'good' : avg >= 50 ? 'avg' : ''}`}>
                                                 {avg > 0 ? `${avg}%` : '-'}
                                             </span>
-                                            <span className="date-cell">{formatDate(student.createdAt)}</span>
+                                            <div className="actions-cell">
+                                                <button
+                                                    className="delete-btn"
+                                                    onClick={() => { setSelectedStudent(student); setShowDeleteModal(true); }}
+                                                    title="Delete Student"
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /></svg>
+                                                </button>
+                                            </div>
                                         </div>
                                     );
                                 })}
@@ -540,6 +607,89 @@ const FacultyDashboard = () => {
                     )}
                 </div>
             </main>
+
+            {/* Add Student Modal */}
+            {showAddModal && (
+                <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
+                    <div className="modal" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Add New Student</h2>
+                            <button className="modal-close" onClick={() => setShowAddModal(false)}>×</button>
+                        </div>
+                        <form onSubmit={handleAddStudent} className="modal-form">
+                            {formError && <div className="form-error">{formError}</div>}
+                            <div className="form-group">
+                                <label>Full Name *</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={addForm.name}
+                                    onChange={(e) => setAddForm({ ...addForm, name: e.target.value })}
+                                    placeholder="John Doe"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Email *</label>
+                                <input
+                                    type="email"
+                                    required
+                                    value={addForm.email}
+                                    onChange={(e) => setAddForm({ ...addForm, email: e.target.value })}
+                                    placeholder="student@example.com"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Password *</label>
+                                <input
+                                    type="password"
+                                    required
+                                    minLength="6"
+                                    value={addForm.password}
+                                    onChange={(e) => setAddForm({ ...addForm, password: e.target.value })}
+                                    placeholder="Min 6 characters"
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Roll Number</label>
+                                <input
+                                    type="text"
+                                    value={addForm.rollNumber}
+                                    onChange={(e) => setAddForm({ ...addForm, rollNumber: e.target.value })}
+                                    placeholder="Optional"
+                                />
+                            </div>
+                            <div className="modal-actions">
+                                <button type="button" className="btn-cancel" onClick={() => setShowAddModal(false)}>Cancel</button>
+                                <button type="submit" className="btn-primary" disabled={formLoading}>
+                                    {formLoading ? 'Adding...' : 'Add Student'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteModal && selectedStudent && (
+                <div className="modal-overlay" onClick={() => setShowDeleteModal(false)}>
+                    <div className="modal modal-small" onClick={(e) => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2>Delete Student</h2>
+                            <button className="modal-close" onClick={() => setShowDeleteModal(false)}>×</button>
+                        </div>
+                        <div className="modal-body">
+                            <p>Are you sure you want to delete <strong>{selectedStudent.name}</strong>?</p>
+                            <p className="warning-text">This will also delete all their quiz submissions. This action cannot be undone.</p>
+                        </div>
+                        <div className="modal-actions">
+                            <button className="btn-cancel" onClick={() => setShowDeleteModal(false)}>Cancel</button>
+                            <button className="btn-danger" onClick={handleDeleteStudent} disabled={formLoading}>
+                                {formLoading ? 'Deleting...' : 'Delete Student'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

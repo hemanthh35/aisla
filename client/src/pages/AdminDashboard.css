@@ -261,30 +261,6 @@
     font-weight: 600;
 }
 
-/* Topbar Logos - Centered */
-.topbar-logos {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-}
-
-.topbar-logo {
-    height: 36px;
-    width: auto;
-    object-fit: contain;
-    filter: brightness(0) invert(1);
-    opacity: 0.85;
-    transition: all 0.3s ease;
-}
-
-.topbar-logo:hover {
-    opacity: 1;
-    transform: scale(1.08);
-}
-
 .topbar-right {
     display: flex;
     align-items: center;

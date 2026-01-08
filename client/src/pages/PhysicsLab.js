@@ -1842,7 +1842,7 @@ const PhysicsLab = () => {
       Keep the explanation concise and educational, suitable for a student.`;
 
       const response = await axios.post(
-        "/api/ai/chat",
+        "/api/chat",
         { message: prompt },
         { headers: { Authorization: `Bearer ${token}` } }
       );

@@ -31,6 +31,14 @@ const Dashboard = () => {
     experimentTitle: "",
   });
 
+  // Class Management (Student)
+  const [showJoinClassModal, setShowJoinClassModal] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [enrolledClasses, setEnrolledClasses] = useState([]);
+  const [joinError, setJoinError] = useState("");
+  const [joinSuccess, setJoinSuccess] = useState("");
+  const [joiningClass, setJoiningClass] = useState(false);
+
   const isFaculty = user?.role === "faculty" || user?.role === "admin";
   const isAdmin = user?.role === "admin";
 
@@ -93,6 +101,55 @@ const Dashboard = () => {
     logout();
     navigate("/login");
   };
+
+  // Fetch enrolled classes for students
+  const fetchEnrolledClasses = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get("/api/enroll/my-classes", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setEnrolledClasses(res.data.data || []);
+    } catch (err) {
+      console.error("Error fetching enrolled classes:", err);
+    }
+  };
+
+  // Join a class with code
+  const handleJoinClass = async (e) => {
+    e.preventDefault();
+    setJoinError("");
+    setJoinSuccess("");
+    setJoiningClass(true);
+
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.post(
+        "/api/enroll",
+        { joinCode },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setJoinSuccess(res.data.message || "Successfully joined class!");
+      setJoinCode("");
+      fetchEnrolledClasses();
+      setTimeout(() => {
+        setShowJoinClassModal(false);
+        setJoinSuccess("");
+      }, 2000);
+    } catch (err) {
+      setJoinError(err.response?.data?.message || "Failed to join class");
+    } finally {
+      setJoiningClass(false);
+    }
+  };
+
+  // Fetch enrolled classes on mount for students
+  useEffect(() => {
+    if (user && !isFaculty) {
+      fetchEnrolledClasses();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   // Fetch quiz submissions for a specific experiment (Faculty)
   const fetchQuizSubmissions = async (experimentId) => {
@@ -627,6 +684,49 @@ const Dashboard = () => {
               </svg>
               AR Chem Camera
             </Link>
+
+            {/* Class Management - Faculty Only */}
+            {(user?.role === "faculty" || user?.role === "admin") && (
+              <Link to="/class-management" className="sidebar-link">
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="9" cy="7" r="4" />
+                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                </svg>
+                My Classes
+              </Link>
+            )}
+
+            {/* Join Class - Students Only */}
+            {!isFaculty && (
+              <button
+                className="sidebar-link join-class-btn"
+                onClick={() => setShowJoinClassModal(true)}
+              >
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <line x1="20" y1="8" x2="20" y2="14" />
+                  <line x1="23" y1="11" x2="17" y2="11" />
+                </svg>
+                Join Class
+              </button>
+            )}
           </div>
         </nav>
 
@@ -1276,6 +1376,123 @@ const Dashboard = () => {
         cancelText="Cancel"
         isDangerous={true}
       />
+
+      {/* Join Class Modal - Students Only */}
+      {showJoinClassModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowJoinClassModal(false)}
+        >
+          <div
+            className="modal-content join-class-modal"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="modal-header">
+              <h2>Join a Class</h2>
+              <button
+                className="close-btn"
+                onClick={() => setShowJoinClassModal(false)}
+              >
+                ×
+              </button>
+            </div>
+            <form onSubmit={handleJoinClass}>
+              <div className="form-group">
+                <label>Enter Class Code</label>
+                <input
+                  type="text"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                  placeholder="e.g., ABC123"
+                  maxLength={6}
+                  style={{
+                    textAlign: "center",
+                    fontSize: "1.5rem",
+                    letterSpacing: "0.3em",
+                    textTransform: "uppercase",
+                  }}
+                  required
+                />
+                <p
+                  style={{
+                    fontSize: "0.875rem",
+                    color: "#a1a1aa",
+                    marginTop: "0.5rem",
+                  }}
+                >
+                  Ask your instructor for the 6-character class code
+                </p>
+              </div>
+              {joinError && <div className="form-error">{joinError}</div>}
+              {joinSuccess && <div className="form-success">{joinSuccess}</div>}
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="cancel-btn"
+                  onClick={() => setShowJoinClassModal(false)}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="submit-btn"
+                  disabled={joiningClass || joinCode.length < 6}
+                >
+                  {joiningClass ? "Joining..." : "Join Class"}
+                </button>
+              </div>
+            </form>
+
+            {/* Show enrolled classes */}
+            {enrolledClasses.length > 0 && (
+              <div
+                style={{
+                  marginTop: "1.5rem",
+                  borderTop: "1px solid rgba(255,255,255,0.1)",
+                  paddingTop: "1rem",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "0.9375rem",
+                    color: "#a1a1aa",
+                    marginBottom: "0.75rem",
+                  }}
+                >
+                  Your Enrolled Classes
+                </h3>
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "0.5rem",
+                  }}
+                >
+                  {enrolledClasses.map((enrollment) => (
+                    <div
+                      key={enrollment._id}
+                      style={{
+                        padding: "0.75rem",
+                        background: "rgba(99, 102, 241, 0.1)",
+                        borderRadius: "0.5rem",
+                        border: "1px solid rgba(99, 102, 241, 0.2)",
+                      }}
+                    >
+                      <div style={{ fontWeight: "600", color: "#f4f4f5" }}>
+                        {enrollment.class?.name}
+                      </div>
+                      <div style={{ fontSize: "0.75rem", color: "#a1a1aa" }}>
+                        {enrollment.class?.faculty?.name} •{" "}
+                        {enrollment.class?.code}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

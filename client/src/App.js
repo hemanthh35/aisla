@@ -18,6 +18,8 @@ import ChemistryLab from "./pages/ChemistryLab";
 import ChemistryLabAR from "./pages/ChemistryLabAR";
 import ARChemistryLabCamera from "./pages/ARChemistryLabCamera";
 import PhysicsLab from "./pages/PhysicsLab";
+import ClassManagement from "./pages/ClassManagement";
+import ClassDetails from "./pages/ClassDetails";
 import PrivateRoute from "./components/PrivateRoute";
 import "./App.css";
 
@@ -160,6 +162,26 @@ function App() {
               element={
                 <PrivateRoute>
                   <PhysicsLab />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Class Management (Faculty) */}
+            <Route
+              path="/class-management"
+              element={
+                <PrivateRoute>
+                  <ClassManagement />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Class Details (Analytics) */}
+            <Route
+              path="/class/:id"
+              element={
+                <PrivateRoute>
+                  <ClassDetails />
                 </PrivateRoute>
               }
             />

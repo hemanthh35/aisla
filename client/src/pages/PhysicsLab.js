@@ -28,6 +28,7 @@ const PhysicsLab = () => {
   const engineRef = useRef(null);
   const sceneRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const cameraRef = useRef(null);
 
   // State
   const [isLoading, setIsLoading] = useState(true);
@@ -107,6 +108,7 @@ const PhysicsLab = () => {
       camera.lowerRadiusLimit = 5;
       camera.upperRadiusLimit = 30;
       camera.wheelPrecision = 15;
+      cameraRef.current = camera;
 
       // Lighting
       const hemiLight = new BABYLON.HemisphericLight(
@@ -360,146 +362,482 @@ const PhysicsLab = () => {
     return mesh;
   };
 
-  // Setup projectile motion with launcher
-  const setupProjectileMotion = (scene, params) => {
-    // Launcher base
-    const launcher = trackMesh(
-      BABYLON.MeshBuilder.CreateBox(
-        "launcher",
-        { width: 0.8, height: 0.4, depth: 0.8 },
-        scene
-      )
-    );
-    launcher.position = new BABYLON.Vector3(-10, 0.2, 0);
-    const launcherMat = new BABYLON.PBRMaterial("launcherMat", scene);
-    launcherMat.albedoColor = new BABYLON.Color3(0.2, 0.25, 0.3);
-    launcherMat.metallic = 0.7;
-    launcherMat.roughness = 0.4;
-    launcher.material = launcherMat;
-    launcherRef.current = launcher;
+  // ===== ADVANCED ANIMATION HELPERS =====
 
-    // Launcher barrel
-    const barrel = trackMesh(
-      BABYLON.MeshBuilder.CreateCylinder(
-        "barrel",
-        { height: 1.2, diameter: 0.25 },
-        scene
-      )
+  // Create particle system for impact/launch effects
+  const createParticleSystem = (scene, emitterMesh, options = {}) => {
+    const particleSystem = new BABYLON.ParticleSystem(
+      "particles",
+      options.capacity || 100,
+      scene
     );
-    barrel.position = new BABYLON.Vector3(0, 0.5, 0);
-    barrel.rotation.z = -((params.angle || 45) * Math.PI) / 180 + Math.PI / 2;
-    barrel.material = launcherMat;
-    barrel.parent = launcher;
-
-    // Projectile (glowing sphere)
-    const projectile = trackMesh(
-      BABYLON.MeshBuilder.CreateSphere(
-        "projectile",
-        { diameter: 0.3, segments: 16 },
-        scene
-      )
+    particleSystem.particleTexture = new BABYLON.Texture(
+      "https://assets.babylonjs.com/textures/flare.png",
+      scene
     );
-    projectile.position = new BABYLON.Vector3(-10, 0.8, 0);
-    const projMat = new BABYLON.PBRMaterial("projMat", scene);
-    projMat.albedoColor = new BABYLON.Color3(1, 0.3, 0.1);
-    projMat.emissiveColor = new BABYLON.Color3(0.6, 0.15, 0.05);
-    projMat.metallic = 0.9;
-    projMat.roughness = 0.1;
-    projectile.material = projMat;
-    projectileRef.current = projectile;
+    particleSystem.emitter = emitterMesh;
+    particleSystem.minEmitBox = new BABYLON.Vector3(-0.1, 0, -0.1);
+    particleSystem.maxEmitBox = new BABYLON.Vector3(0.1, 0, 0.1);
 
-    // Ground target zone
-    const target = trackMesh(
-      BABYLON.MeshBuilder.CreateDisc(
-        "target",
-        { radius: 0.8, tessellation: 32 },
-        scene
-      )
-    );
-    const range = getProjectileRange(params.velocity, params.angle);
-    target.position = new BABYLON.Vector3(-10 + range, 0.02, 0);
-    target.rotation.x = Math.PI / 2;
-    const targetMat = new BABYLON.StandardMaterial("targetMat", scene);
-    targetMat.emissiveColor = new BABYLON.Color3(0.1, 0.6, 0.2);
-    targetMat.alpha = 0.6;
-    target.material = targetMat;
+    particleSystem.color1 =
+      options.color1 || new BABYLON.Color4(1, 0.8, 0.3, 1);
+    particleSystem.color2 = options.color2 || new BABYLON.Color4(1, 0.5, 0, 1);
+    particleSystem.colorDead = new BABYLON.Color4(0.2, 0.1, 0, 0);
 
-    // Add glow layer for projectile
-    const glowLayer = new BABYLON.GlowLayer("glow", scene, {
+    particleSystem.minSize = options.minSize || 0.05;
+    particleSystem.maxSize = options.maxSize || 0.15;
+    particleSystem.minLifeTime = options.minLifeTime || 0.2;
+    particleSystem.maxLifeTime = options.maxLifeTime || 0.5;
+    particleSystem.emitRate = options.emitRate || 50;
+
+    particleSystem.direction1 = new BABYLON.Vector3(-1, 1, -1);
+    particleSystem.direction2 = new BABYLON.Vector3(1, 1, 1);
+    particleSystem.minEmitPower = options.minPower || 0.5;
+    particleSystem.maxEmitPower = options.maxPower || 1.5;
+    particleSystem.updateSpeed = 0.01;
+
+    particleSystemRef.current = particleSystem;
+    return particleSystem;
+  };
+
+  // Create trail/ribbon effect for moving objects
+  const createTrailMesh = (scene, name, color, maxPoints = 50) => {
+    const trail = {
+      points: [],
+      maxPoints: maxPoints,
+      mesh: null,
+      color: color || new BABYLON.Color3(0.3, 0.7, 1.0),
+      update: function (position) {
+        this.points.push(position.clone());
+        if (this.points.length > this.maxPoints) {
+          this.points.shift();
+        }
+        if (this.mesh) {
+          this.mesh.dispose();
+        }
+        if (this.points.length > 2) {
+          this.mesh = trackMesh(
+            BABYLON.MeshBuilder.CreateLines(
+              name,
+              { points: this.points },
+              scene
+            )
+          );
+          this.mesh.color = this.color;
+        }
+      },
+      clear: function () {
+        this.points = [];
+        if (this.mesh) {
+          this.mesh.dispose();
+          this.mesh = null;
+        }
+      },
+    };
+    return trail;
+  };
+
+  // Create glow layer for enhanced visuals
+  const createGlowLayer = (scene) => {
+    const gl = new BABYLON.GlowLayer("glow", scene, {
       mainTextureFixedSize: 256,
       blurKernelSize: 64,
     });
-    glowLayer.intensity = 0.5;
-    glowLayer.addIncludedOnlyMesh(projectile);
+    gl.intensity = 0.5;
+    return gl;
+  };
+
+  // Create velocity arrow indicator
+  const createVelocityArrow = (scene, name, color) => {
+    const arrow = trackMesh(
+      BABYLON.MeshBuilder.CreateCylinder(
+        name + "_shaft",
+        {
+          height: 1,
+          diameter: 0.05,
+          tessellation: 8,
+        },
+        scene
+      )
+    );
+
+    const arrowHead = trackMesh(
+      BABYLON.MeshBuilder.CreateCylinder(
+        name + "_head",
+        {
+          height: 0.2,
+          diameterTop: 0,
+          diameterBottom: 0.15,
+          tessellation: 8,
+        },
+        scene
+      )
+    );
+    arrowHead.parent = arrow;
+    arrowHead.position.y = 0.6;
+
+    const mat = new BABYLON.StandardMaterial(name + "_mat", scene);
+    mat.diffuseColor = color || new BABYLON.Color3(1, 0.3, 0.3);
+    mat.emissiveColor = color
+      ? color.scale(0.3)
+      : new BABYLON.Color3(0.3, 0.1, 0.1);
+    arrow.material = mat;
+    arrowHead.material = mat;
+
+    arrow.setEnabled(false);
+
+    return {
+      mesh: arrow,
+      update: function (position, velocity, scale = 0.5) {
+        if (velocity.length() < 0.01) {
+          this.mesh.setEnabled(false);
+          return;
+        }
+        this.mesh.setEnabled(true);
+        this.mesh.position = position.clone();
+        this.mesh.scaling.y = velocity.length() * scale;
+
+        // Point arrow in direction of velocity
+        const direction = velocity.normalize();
+        const angle = Math.atan2(direction.x, direction.y);
+        this.mesh.rotation.z = -angle;
+      },
+    };
+  };
+
+  // Create momentum/energy bar indicator
+  const createEnergyBar = (scene, name, position, color) => {
+    const bar = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        name,
+        {
+          width: 0.1,
+          height: 1,
+          depth: 0.05,
+        },
+        scene
+      )
+    );
+    bar.position = position;
+
+    const mat = new BABYLON.StandardMaterial(name + "_mat", scene);
+    mat.diffuseColor = color || new BABYLON.Color3(0.2, 0.8, 0.3);
+    mat.emissiveColor = color
+      ? color.scale(0.2)
+      : new BABYLON.Color3(0.05, 0.2, 0.08);
+    bar.material = mat;
+
+    return {
+      mesh: bar,
+      maxValue: 1,
+      update: function (value) {
+        const normalized = Math.min(1, Math.max(0, value / this.maxValue));
+        this.mesh.scaling.y = normalized;
+        this.mesh.position.y = position.y - (1 - normalized) * 0.5;
+      },
+    };
+  };
+
+  // ============ PROJECTILE MOTION - EDUCATIONAL SETUP ============
+  const setupProjectileMotion = (scene, params) => {
+    const startX = -8;
+    const startY = 1;
+    const angle = params.angle || 45;
+    const velocity = params.velocity || 15;
+
+    // === LAUNCHER (Cannon/Launcher) ===
+    const launcher = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "launcher",
+        { width: 1.2, height: 0.6, depth: 1 },
+        scene
+      )
+    );
+    launcher.position = new BABYLON.Vector3(startX, 0.3, 0);
+    const launcherMat = new BABYLON.StandardMaterial("launcherMat", scene);
+    launcherMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.35);
+    launcher.material = launcherMat;
+    launcherRef.current = launcher;
+
+    // Launcher barrel (tilted at angle)
+    const barrel = trackMesh(
+      BABYLON.MeshBuilder.CreateCylinder(
+        "barrel",
+        { height: 1.5, diameter: 0.3 },
+        scene
+      )
+    );
+    barrel.position = new BABYLON.Vector3(0.3, 0.5, 0);
+    barrel.rotation.z = -(angle * Math.PI) / 180 + Math.PI / 2;
+    barrel.material = launcherMat;
+    barrel.parent = launcher;
+
+    // === PROJECTILE (Large visible ball) ===
+    const ballDiameter = 0.5; // Larger for visibility
+    const projectile = trackMesh(
+      BABYLON.MeshBuilder.CreateSphere(
+        "projectile",
+        { diameter: ballDiameter, segments: 24 },
+        scene
+      )
+    );
+    projectile.position = new BABYLON.Vector3(startX, startY, 0);
+    const projMat = new BABYLON.StandardMaterial("projMat", scene);
+    projMat.diffuseColor = new BABYLON.Color3(1, 0.4, 0.1); // Bright orange
+    projMat.specularColor = new BABYLON.Color3(1, 0.8, 0.5);
+    projectile.material = projMat;
+    projectileRef.current = projectile;
+
+    // === VELOCITY ARROW (Shows initial velocity direction) ===
+    const velocityArrow = createForceArrow(
+      scene,
+      "velocity",
+      new BABYLON.Color3(0, 0.8, 0.2),
+      velocity / 15
+    );
+    velocityArrow.position = new BABYLON.Vector3(startX, startY + 0.5, 0);
+    velocityArrow.rotation.z = ((90 - angle) * Math.PI) / 180; // Point in velocity direction
+
+    // === GROUND REFERENCE LINE ===
+    const ground = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "ground",
+        { width: 25, height: 0.05, depth: 3 },
+        scene
+      )
+    );
+    ground.position = new BABYLON.Vector3(0, 0.025, 0);
+    const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+    groundMat.diffuseColor = new BABYLON.Color3(0.2, 0.5, 0.2); // Green grass
+    ground.material = groundMat;
+
+    // === DISTANCE MARKERS (Every 5 meters) ===
+    const range = getProjectileRange(velocity, angle);
+    for (let d = 5; d <= Math.ceil(range); d += 5) {
+      const marker = trackMesh(
+        BABYLON.MeshBuilder.CreateBox(
+          "marker" + d,
+          { width: 0.1, height: 0.3, depth: 0.5 },
+          scene
+        )
+      );
+      marker.position = new BABYLON.Vector3(startX + d, 0.15, 0);
+      const markerMat = new BABYLON.StandardMaterial("markerMat" + d, scene);
+      markerMat.diffuseColor = new BABYLON.Color3(0.8, 0.8, 0.8);
+      marker.material = markerMat;
+    }
+
+    // === TARGET ZONE (Landing spot) ===
+    const target = trackMesh(
+      BABYLON.MeshBuilder.CreateDisc(
+        "target",
+        { radius: 1, tessellation: 32 },
+        scene
+      )
+    );
+    target.position = new BABYLON.Vector3(startX + range, 0.03, 0);
+    target.rotation.x = Math.PI / 2;
+    const targetMat = new BABYLON.StandardMaterial("targetMat", scene);
+    targetMat.emissiveColor = new BABYLON.Color3(0.2, 0.8, 0.3);
+    targetMat.alpha = 0.5;
+    target.material = targetMat;
+
+    // === HEIGHT REFERENCE (Max height indicator) ===
+    const maxH = getMaxHeight(velocity, angle);
+    const heightLine = trackMesh(
+      BABYLON.MeshBuilder.CreateCylinder(
+        "heightLine",
+        { height: maxH, diameter: 0.02 },
+        scene
+      )
+    );
+    heightLine.position = new BABYLON.Vector3(
+      startX + range / 2,
+      maxH / 2 + startY,
+      0
+    );
+    const heightMat = new BABYLON.StandardMaterial("heightMat", scene);
+    heightMat.emissiveColor = new BABYLON.Color3(0.5, 0.5, 1);
+    heightMat.alpha = 0.6;
+    heightLine.material = heightMat;
+
+    // Store references for animation
+    collisionObjectsRef.current = [{ velocityArrow, startX, startY, angle }];
 
     setTheoreticalValues({
-      range: getProjectileRange(params.velocity, params.angle),
-      maxHeight: getMaxHeight(params.velocity, params.angle),
-      timeOfFlight: getTimeOfFlight(params.velocity, params.angle),
+      range: range,
+      maxHeight: maxH,
+      timeOfFlight: getTimeOfFlight(velocity, angle),
     });
   };
 
-  // Setup pendulum
+  // ============ PENDULUM - EDUCATIONAL SETUP ============
   const setupPendulum = (scene, params) => {
     const pivotHeight = 6;
-    const length = params.length || 1;
+    const length = params.length || 2; // Longer default for visibility
+    const amplitude = params.amplitude || 20;
+    const angleRad = (amplitude * Math.PI) / 180;
 
-    // Support frame
-    const frame = BABYLON.MeshBuilder.CreateBox(
-      "frame",
-      { width: 0.1, height: pivotHeight, depth: 0.1 },
-      scene
+    // === SUPPORT STRUCTURE (Dark metal frame) ===
+    const frame = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "frame",
+        { width: 0.15, height: pivotHeight + 0.5, depth: 0.15 },
+        scene
+      )
     );
     frame.position = new BABYLON.Vector3(0, pivotHeight / 2, 0);
-    const frameMat = new BABYLON.PBRMaterial("frameMat", scene);
-    frameMat.albedoColor = new BABYLON.Color3(0.3, 0.3, 0.35);
-    frameMat.metallic = 0.8;
+    const frameMat = new BABYLON.StandardMaterial("frameMat", scene);
+    frameMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.25);
     frame.material = frameMat;
 
-    // Pivot point
-    const pivot = BABYLON.MeshBuilder.CreateSphere(
-      "pivot",
-      { diameter: 0.15 },
-      scene
+    // === PIVOT POINT (Small silver ball) ===
+    const pivot = trackMesh(
+      BABYLON.MeshBuilder.CreateSphere("pivot", { diameter: 0.2 }, scene)
     );
     pivot.position = new BABYLON.Vector3(0, pivotHeight, 0);
-    pivot.material = frameMat;
+    const pivotMat = new BABYLON.StandardMaterial("pivotMat", scene);
+    pivotMat.diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.7);
+    pivot.material = pivotMat;
 
-    // Bob (golden sphere)
-    const bob = BABYLON.MeshBuilder.CreateSphere(
-      "bob",
-      { diameter: 0.5 },
-      scene
+    // === PENDULUM BOB (Large, visible golden sphere) ===
+    const bobDiameter = 0.8; // Much larger for visibility
+    const bob = trackMesh(
+      BABYLON.MeshBuilder.CreateSphere(
+        "bob",
+        { diameter: bobDiameter, segments: 32 },
+        scene
+      )
     );
-    const angleRad = ((params.amplitude || 15) * Math.PI) / 180;
     bob.position = new BABYLON.Vector3(
       length * Math.sin(angleRad),
       pivotHeight - length * Math.cos(angleRad),
       0
     );
-    const bobMat = new BABYLON.PBRMaterial("bobMat", scene);
-    bobMat.albedoColor = new BABYLON.Color3(0.9, 0.7, 0.2);
-    bobMat.metallic = 0.95;
-    bobMat.roughness = 0.1;
+    const bobMat = new BABYLON.StandardMaterial("bobMat", scene);
+    bobMat.diffuseColor = new BABYLON.Color3(1.0, 0.8, 0.2); // Bright gold
+    bobMat.specularColor = new BABYLON.Color3(1, 1, 0.5);
+    bobMat.specularPower = 64;
     bob.material = bobMat;
 
-    // String
-    const string = BABYLON.MeshBuilder.CreateCylinder(
-      "string",
-      { height: length, diameter: 0.03 },
-      scene
+    // === STRING (Visible rope) ===
+    const string = trackMesh(
+      BABYLON.MeshBuilder.CreateCylinder(
+        "string",
+        { height: length, diameter: 0.05 },
+        scene
+      )
     );
     const stringMat = new BABYLON.StandardMaterial("stringMat", scene);
-    stringMat.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
+    stringMat.diffuseColor = new BABYLON.Color3(0.6, 0.5, 0.4); // Brown rope color
     string.material = stringMat;
     updatePendulumString(string, pivotHeight, bob.position);
 
-    pendulumRef.current = { frame, pivot, bob, string };
+    // === EQUILIBRIUM LINE (Vertical dashed indicator) ===
+    const eqLine = trackMesh(
+      BABYLON.MeshBuilder.CreateCylinder(
+        "eqLine",
+        { height: length + 1, diameter: 0.02 },
+        scene
+      )
+    );
+    eqLine.position = new BABYLON.Vector3(0, pivotHeight - length / 2, 0);
+    const eqMat = new BABYLON.StandardMaterial("eqMat", scene);
+    eqMat.diffuseColor = new BABYLON.Color3(0.3, 0.8, 0.3); // Green
+    eqMat.alpha = 0.5;
+    eqLine.material = eqMat;
+
+    // === ANGLE ARC (Shows current angle) ===
+    const arc = trackMesh(
+      BABYLON.MeshBuilder.CreateTorus(
+        "arc",
+        { diameter: 1.5, thickness: 0.03, tessellation: 64 },
+        scene
+      )
+    );
+    arc.position = new BABYLON.Vector3(0, pivotHeight, 0);
+    arc.rotation.x = Math.PI / 2;
+    const arcMat = new BABYLON.StandardMaterial("arcMat", scene);
+    arcMat.emissiveColor = new BABYLON.Color3(0.2, 0.6, 1.0); // Blue glow
+    arcMat.alpha = 0.6;
+    arc.material = arcMat;
+
+    // === GRAVITY ARROW (Points down from bob) ===
+    const gravityArrow = createForceArrow(
+      scene,
+      "gravity",
+      new BABYLON.Color3(1, 0.3, 0.3),
+      0.8
+    );
+    gravityArrow.position = bob.position.clone();
+    gravityArrow.position.y -= bobDiameter / 2;
+    gravityArrow.rotation.z = Math.PI; // Point down
+
+    // === TENSION ARROW (Points along string toward pivot) ===
+    const tensionArrow = createForceArrow(
+      scene,
+      "tension",
+      new BABYLON.Color3(0.3, 0.8, 1),
+      0.6
+    );
+    tensionArrow.position = bob.position.clone();
+
+    // Store all parts for animation
+    pendulumRef.current = {
+      frame,
+      pivot,
+      bob,
+      string,
+      arc,
+      eqLine,
+      gravityArrow,
+      tensionArrow,
+      length,
+      pivotHeight,
+      bobDiameter,
+    };
 
     setTheoreticalValues({
       period: pendulumPeriod(length),
       frequency: 1 / pendulumPeriod(length),
     });
+  };
+
+  // Helper: Create a force arrow (shaft + head)
+  const createForceArrow = (scene, name, color, size = 1) => {
+    // Arrow shaft
+    const shaft = trackMesh(
+      BABYLON.MeshBuilder.CreateCylinder(
+        name + "_shaft",
+        { height: size * 0.8, diameter: 0.06 },
+        scene
+      )
+    );
+    shaft.position.y = -size * 0.4;
+
+    // Arrow head (cone)
+    const head = trackMesh(
+      BABYLON.MeshBuilder.CreateCylinder(
+        name + "_head",
+        {
+          height: size * 0.3,
+          diameterTop: 0,
+          diameterBottom: 0.18,
+        },
+        scene
+      )
+    );
+    head.position.y = -size * 0.8;
+    head.parent = shaft;
+
+    // Material
+    const mat = new BABYLON.StandardMaterial(name + "_mat", scene);
+    mat.diffuseColor = color;
+    mat.emissiveColor = color.scale(0.3);
+    shaft.material = mat;
+    head.material = mat;
+
+    return shaft;
   };
 
   // Helper to update pendulum string
@@ -514,61 +852,136 @@ const PhysicsLab = () => {
   };
 
   // Setup collision
+  // ============ ELASTIC COLLISION - EDUCATIONAL SETUP ============
   const setupCollision = (scene, params) => {
-    // Track
-    const track = BABYLON.MeshBuilder.CreateBox(
-      "track",
-      { width: 12, height: 0.05, depth: 0.8 },
-      scene
+    // === TRACK (Long horizontal surface) ===
+    const track = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "track",
+        { width: 14, height: 0.08, depth: 1.5 },
+        scene
+      )
     );
-    track.position = new BABYLON.Vector3(0, 0.025, 0);
-    const trackMat = new BABYLON.PBRMaterial("trackMat", scene);
-    trackMat.albedoColor = new BABYLON.Color3(0.15, 0.15, 0.2);
-    trackMat.metallic = 0.3;
+    track.position = new BABYLON.Vector3(0, 0.04, 0);
+    const trackMat = new BABYLON.StandardMaterial("trackMat", scene);
+    trackMat.diffuseColor = new BABYLON.Color3(0.2, 0.2, 0.25);
     track.material = trackMat;
 
-    // Object 1 (blue)
-    const size1 = 0.3 + params.mass1 * 0.05;
-    const obj1 = BABYLON.MeshBuilder.CreateSphere(
-      "obj1",
-      { diameter: size1 },
-      scene
+    // === BALL 1 (Blue - moving right) ===
+    const size1 = 0.5 + params.mass1 * 0.08; // Larger balls
+    const obj1 = trackMesh(
+      BABYLON.MeshBuilder.CreateSphere(
+        "obj1",
+        { diameter: size1, segments: 24 },
+        scene
+      )
     );
-    obj1.position = new BABYLON.Vector3(-4, size1 / 2 + 0.05, 0);
-    const mat1 = new BABYLON.PBRMaterial("mat1", scene);
-    mat1.albedoColor = new BABYLON.Color3(0.2, 0.4, 0.9);
-    mat1.emissiveColor = new BABYLON.Color3(0.05, 0.1, 0.2);
-    mat1.metallic = 0.7;
+    obj1.position = new BABYLON.Vector3(-5, size1 / 2 + 0.08, 0);
+    const mat1 = new BABYLON.StandardMaterial("mat1", scene);
+    mat1.diffuseColor = new BABYLON.Color3(0.2, 0.5, 1); // Bright blue
+    mat1.specularColor = new BABYLON.Color3(0.5, 0.7, 1);
     obj1.material = mat1;
 
-    // Object 2 (orange)
-    const size2 = 0.3 + params.mass2 * 0.05;
-    const obj2 = BABYLON.MeshBuilder.CreateSphere(
-      "obj2",
-      { diameter: size2 },
-      scene
+    // === VELOCITY ARROW 1 (Shows velocity direction) ===
+    const v1Arrow = createForceArrow(
+      scene,
+      "v1",
+      new BABYLON.Color3(0.2, 0.5, 1),
+      Math.abs(params.velocity1) / 6
     );
-    obj2.position = new BABYLON.Vector3(4, size2 / 2 + 0.05, 0);
-    const mat2 = new BABYLON.PBRMaterial("mat2", scene);
-    mat2.albedoColor = new BABYLON.Color3(0.9, 0.4, 0.2);
-    mat2.emissiveColor = new BABYLON.Color3(0.2, 0.1, 0.05);
-    mat2.metallic = 0.7;
+    v1Arrow.position = new BABYLON.Vector3(-5, size1 + 0.5, 0);
+    v1Arrow.rotation.z = params.velocity1 >= 0 ? Math.PI / 2 : -Math.PI / 2; // Point left or right
+
+    // === BALL 2 (Red/Orange - moving left) ===
+    const size2 = 0.5 + params.mass2 * 0.08;
+    const obj2 = trackMesh(
+      BABYLON.MeshBuilder.CreateSphere(
+        "obj2",
+        { diameter: size2, segments: 24 },
+        scene
+      )
+    );
+    obj2.position = new BABYLON.Vector3(5, size2 / 2 + 0.08, 0);
+    const mat2 = new BABYLON.StandardMaterial("mat2", scene);
+    mat2.diffuseColor = new BABYLON.Color3(1, 0.4, 0.2); // Bright orange
+    mat2.specularColor = new BABYLON.Color3(1, 0.7, 0.5);
     obj2.material = mat2;
 
+    // === VELOCITY ARROW 2 ===
+    const v2Arrow = createForceArrow(
+      scene,
+      "v2",
+      new BABYLON.Color3(1, 0.4, 0.2),
+      Math.abs(params.velocity2) / 6
+    );
+    v2Arrow.position = new BABYLON.Vector3(5, size2 + 0.5, 0);
+    v2Arrow.rotation.z = params.velocity2 >= 0 ? Math.PI / 2 : -Math.PI / 2;
+
+    // === COLLISION POINT INDICATOR (Center marker) ===
+    const collisionMarker = trackMesh(
+      BABYLON.MeshBuilder.CreateCylinder(
+        "collisionMarker",
+        { height: 0.02, diameter: 0.5 },
+        scene
+      )
+    );
+    collisionMarker.position = new BABYLON.Vector3(0, 0.09, 0);
+    collisionMarker.rotation.x = Math.PI / 2;
+    const markerMat = new BABYLON.StandardMaterial("markerMat", scene);
+    markerMat.emissiveColor = new BABYLON.Color3(1, 1, 0.3);
+    markerMat.alpha = 0.5;
+    collisionMarker.material = markerMat;
+
+    // === MOMENTUM BARS (Visual indicators) ===
+    const bar1 = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "momentum1",
+        { width: 0.2, height: 1, depth: 0.15 },
+        scene
+      )
+    );
+    bar1.position = new BABYLON.Vector3(-6.5, 0.5, 0);
+    const bar1Mat = new BABYLON.StandardMaterial("bar1Mat", scene);
+    bar1Mat.emissiveColor = new BABYLON.Color3(0.2, 0.5, 1);
+    bar1Mat.alpha = 0.8;
+    bar1.material = bar1Mat;
+    bar1.scaling.y = Math.abs(params.velocity1 * params.mass1) / 10;
+
+    const bar2 = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "momentum2",
+        { width: 0.2, height: 1, depth: 0.15 },
+        scene
+      )
+    );
+    bar2.position = new BABYLON.Vector3(6.5, 0.5, 0);
+    const bar2Mat = new BABYLON.StandardMaterial("bar2Mat", scene);
+    bar2Mat.emissiveColor = new BABYLON.Color3(1, 0.4, 0.2);
+    bar2Mat.alpha = 0.8;
+    bar2.material = bar2Mat;
+    bar2.scaling.y = Math.abs(params.velocity2 * params.mass2) / 10;
+
+    // Store references for animation
     collisionObjectsRef.current = [
       {
         mesh: obj1,
         mass: params.mass1,
         velocity: params.velocity1,
-        initialX: -4,
+        initialX: -5,
+        bar: bar1,
+        arrow: v1Arrow,
+        size: size1,
       },
       {
         mesh: obj2,
         mass: params.mass2,
         velocity: params.velocity2,
-        initialX: 4,
+        initialX: 5,
+        bar: bar2,
+        arrow: v2Arrow,
+        size: size2,
       },
-      { mesh: track },
+      { mesh: track, marker: collisionMarker },
     ];
 
     const result = elasticCollision(
@@ -586,51 +999,120 @@ const PhysicsLab = () => {
     });
   };
 
-  // Setup inclined plane
+  // Setup inclined plane - ball rolls LEFT to RIGHT (X-axis) - Fixed with trackMesh
+  // ============ INCLINED PLANE - EDUCATIONAL SETUP ============
   const setupInclinedPlane = (scene, params) => {
     const angle = params.angle || 30;
     const angleRad = (angle * Math.PI) / 180;
-    const planeLength = 6;
+    const planeLength = 8; // Longer for better visibility
     const planeHeight = planeLength * Math.sin(angleRad);
+    const planeWidth = planeLength * Math.cos(angleRad);
+    const friction = params.friction || 0;
 
-    // Inclined plane
-    const plane = BABYLON.MeshBuilder.CreateBox(
-      "inclined",
-      {
-        width: 2,
-        height: 0.1,
-        depth: planeLength,
-      },
-      scene
+    // === INCLINED PLANE (Ramp) ===
+    const plane = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "inclined",
+        { width: planeLength, height: 0.15, depth: 2.5 },
+        scene
+      )
     );
-    plane.rotation.x = -angleRad;
-    plane.position = new BABYLON.Vector3(
-      0,
-      planeHeight / 2,
-      (planeLength * Math.cos(angleRad)) / 2 - planeLength / 2
-    );
-    const planeMat = new BABYLON.PBRMaterial("planeMat", scene);
-    planeMat.albedoColor = new BABYLON.Color3(0.35, 0.4, 0.45);
-    planeMat.metallic = 0.4;
+    plane.rotation.z = angleRad;
+    plane.position = new BABYLON.Vector3(0, planeHeight / 2, 0);
+    const planeMat = new BABYLON.StandardMaterial("planeMat", scene);
+    planeMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.45);
     plane.material = planeMat;
 
-    // Ball
-    const ball = BABYLON.MeshBuilder.CreateSphere(
-      "ball",
-      { diameter: 0.35 },
-      scene
+    // === GROUND REFERENCE ===
+    const ground = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "ground",
+        { width: 12, height: 0.05, depth: 3 },
+        scene
+      )
     );
-    ball.position = new BABYLON.Vector3(
-      0,
-      planeHeight + 0.25,
-      -planeLength / 2 + 0.3
+    ground.position = new BABYLON.Vector3(0, 0.025, 0);
+    const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
+    groundMat.diffuseColor = new BABYLON.Color3(0.25, 0.4, 0.25);
+    ground.material = groundMat;
+
+    // === BALL (Large, visible) ===
+    const ballRadius = 0.35;
+    const ball = trackMesh(
+      BABYLON.MeshBuilder.CreateSphere(
+        "ball",
+        { diameter: ballRadius * 2, segments: 24 },
+        scene
+      )
     );
-    const ballMat = new BABYLON.PBRMaterial("ballMat", scene);
-    ballMat.albedoColor = new BABYLON.Color3(0.2, 0.8, 0.3);
-    ballMat.emissiveColor = new BABYLON.Color3(0.05, 0.2, 0.08);
-    ballMat.metallic = 0.6;
+    const startX = -planeWidth / 2 + ballRadius;
+    const startY = planeHeight + ballRadius + 0.1;
+    ball.position = new BABYLON.Vector3(startX, startY, 0);
+    const ballMat = new BABYLON.StandardMaterial("ballMat", scene);
+    ballMat.diffuseColor = new BABYLON.Color3(0.3, 0.9, 0.4); // Bright green
+    ballMat.specularColor = new BABYLON.Color3(0.5, 1, 0.6);
     ball.material = ballMat;
 
+    // === FORCE ARROWS ===
+    // Weight (mg) - points straight down
+    const weightArrow = createForceArrow(
+      scene,
+      "weight",
+      new BABYLON.Color3(1, 0.3, 0.3),
+      1.0
+    );
+    weightArrow.position = ball.position.clone();
+    weightArrow.rotation.z = Math.PI; // Points down
+
+    // Weight component parallel to plane (mg sin θ) - points down the slope
+    const parallelArrow = createForceArrow(
+      scene,
+      "parallel",
+      new BABYLON.Color3(1, 0.8, 0.2),
+      0.7
+    );
+    parallelArrow.position = ball.position.clone();
+    parallelArrow.rotation.z = Math.PI / 2 + angleRad; // Along the slope
+
+    // Normal force (N) - perpendicular to plane surface
+    const normalArrow = createForceArrow(
+      scene,
+      "normal",
+      new BABYLON.Color3(0.3, 0.8, 1),
+      0.6
+    );
+    normalArrow.position = ball.position.clone();
+    normalArrow.rotation.z = angleRad; // Perpendicular to slope
+
+    // Friction arrow (if friction > 0) - opposes motion, points up the slope
+    let frictionArrow = null;
+    if (friction > 0) {
+      frictionArrow = createForceArrow(
+        scene,
+        "friction",
+        new BABYLON.Color3(1, 0.5, 0.8),
+        friction * 0.8
+      );
+      frictionArrow.position = ball.position.clone();
+      frictionArrow.rotation.z = -Math.PI / 2 + angleRad; // Up the slope
+    }
+
+    // === ANGLE INDICATOR ARC ===
+    const angleArc = trackMesh(
+      BABYLON.MeshBuilder.CreateTorus(
+        "angleArc",
+        { diameter: 1.5, thickness: 0.03, tessellation: 32 },
+        scene
+      )
+    );
+    angleArc.position = new BABYLON.Vector3(-planeWidth / 2, 0.1, 0);
+    angleArc.rotation.x = Math.PI / 2;
+    const arcMat = new BABYLON.StandardMaterial("arcMat", scene);
+    arcMat.emissiveColor = new BABYLON.Color3(0.8, 0.8, 0.3);
+    arcMat.alpha = 0.6;
+    angleArc.material = arcMat;
+
+    // Store references
     projectileRef.current = ball;
     collisionObjectsRef.current = [
       {
@@ -638,79 +1120,142 @@ const PhysicsLab = () => {
         angle: angleRad,
         length: planeLength,
         height: planeHeight,
+        width: planeWidth,
+        friction: friction,
+        startX: startX,
+        startY: startY,
+        ballRadius: ballRadius,
+        weightArrow,
+        parallelArrow,
+        normalArrow,
+        frictionArrow,
       },
     ];
 
-    const a = inclinedPlaneAcceleration(angle);
+    // Calculate theoretical values
+    const g = 9.81;
+    const a = g * (Math.sin(angleRad) - friction * Math.cos(angleRad));
     setTheoreticalValues({
-      acceleration: a,
-      finalVelocity: Math.sqrt(2 * a * planeLength),
-      timeToBottom: Math.sqrt((2 * planeLength) / a),
+      acceleration: Math.max(0, a),
+      finalVelocity: Math.sqrt(2 * Math.max(0, a) * planeLength),
+      timeToBottom: a > 0 ? Math.sqrt((2 * planeLength) / a) : Infinity,
     });
   };
 
   // Setup spring oscillator
+  // ============ SPRING OSCILLATOR - EDUCATIONAL SETUP ============
   const setupSpringOscillator = (scene, params) => {
-    const springHeight = 5;
-    const equilibriumY = springHeight - 1.5;
-    const amplitude = params.amplitude || 0.1;
+    const springHeight = 6;
+    const equilibriumY = springHeight - 2;
+    const amplitude = params.amplitude || 0.3;
+    const k = params.springConstant || 50;
+    const m = params.mass || 1;
 
-    // Support
-    const support = BABYLON.MeshBuilder.CreateBox(
-      "support",
-      { width: 1.5, height: 0.15, depth: 0.8 },
-      scene
+    // === SUPPORT BEAM ===
+    const support = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "support",
+        { width: 2, height: 0.2, depth: 1 },
+        scene
+      )
     );
     support.position = new BABYLON.Vector3(0, springHeight, 0);
-    const supportMat = new BABYLON.PBRMaterial("supportMat", scene);
-    supportMat.albedoColor = new BABYLON.Color3(0.3, 0.3, 0.35);
-    supportMat.metallic = 0.7;
+    const supportMat = new BABYLON.StandardMaterial("supportMat", scene);
+    supportMat.diffuseColor = new BABYLON.Color3(0.3, 0.3, 0.35);
     support.material = supportMat;
 
-    // Spring coils (visual)
+    // === SPRING COILS (Visual helix) ===
     const springCoils = [];
-    const numCoils = 8;
+    const numCoils = 10;
     for (let i = 0; i < numCoils; i++) {
-      const coil = BABYLON.MeshBuilder.CreateTorus(
-        `coil${i}`,
-        {
-          diameter: 0.3,
-          thickness: 0.03,
-          tessellation: 20,
-        },
-        scene
+      const coil = trackMesh(
+        BABYLON.MeshBuilder.CreateTorus(
+          `coil${i}`,
+          { diameter: 0.4, thickness: 0.04, tessellation: 24 },
+          scene
+        )
       );
       coil.rotation.x = Math.PI / 2;
-      coil.position.y = springHeight - 0.2 - i * 0.15;
+      coil.position.y = springHeight - 0.3 - i * 0.18;
       const coilMat = new BABYLON.StandardMaterial(`coilMat${i}`, scene);
-      coilMat.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.55);
+      coilMat.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.65);
+      coilMat.specularColor = new BABYLON.Color3(0.8, 0.8, 0.8);
       coil.material = coilMat;
       springCoils.push(coil);
     }
 
-    // Mass block
-    const mass = BABYLON.MeshBuilder.CreateBox(
-      "mass",
-      { width: 0.6, height: 0.4, depth: 0.6 },
-      scene
+    // === MASS BLOCK (Large, visible) ===
+    const mass = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "mass",
+        { width: 0.8, height: 0.6, depth: 0.8 },
+        scene
+      )
     );
     mass.position = new BABYLON.Vector3(0, equilibriumY - amplitude, 0);
-    const massMat = new BABYLON.PBRMaterial("massMat", scene);
-    massMat.albedoColor = new BABYLON.Color3(0.7, 0.25, 0.5);
-    massMat.metallic = 0.6;
+    const massMat = new BABYLON.StandardMaterial("massMat", scene);
+    massMat.diffuseColor = new BABYLON.Color3(0.8, 0.3, 0.6); // Bright magenta
+    massMat.specularColor = new BABYLON.Color3(1, 0.5, 0.8);
     mass.material = massMat;
 
+    // === EQUILIBRIUM LINE (Reference) ===
+    const eqLine = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "eqLine",
+        { width: 3, height: 0.02, depth: 0.5 },
+        scene
+      )
+    );
+    eqLine.position = new BABYLON.Vector3(0, equilibriumY, 0);
+    const eqMat = new BABYLON.StandardMaterial("eqMat", scene);
+    eqMat.emissiveColor = new BABYLON.Color3(0.3, 0.8, 0.3);
+    eqMat.alpha = 0.6;
+    eqLine.material = eqMat;
+
+    // === SPRING FORCE ARROW (F = -kx, points toward equilibrium) ===
+    const springArrow = createForceArrow(
+      scene,
+      "spring",
+      new BABYLON.Color3(0.2, 0.8, 1),
+      0.6
+    );
+    springArrow.position = new BABYLON.Vector3(
+      0.8,
+      equilibriumY - amplitude,
+      0
+    );
+    springArrow.rotation.z = 0; // Will update during animation
+
+    // === GRAVITY ARROW (Constant, points down) ===
+    const gravityArrow = createForceArrow(
+      scene,
+      "gravity",
+      new BABYLON.Color3(1, 0.3, 0.3),
+      0.5
+    );
+    gravityArrow.position = new BABYLON.Vector3(
+      -0.8,
+      equilibriumY - amplitude - 0.5,
+      0
+    );
+    gravityArrow.rotation.z = Math.PI; // Points down
+
+    // Store references
     projectileRef.current = mass;
-    collisionObjectsRef.current = [
-      { mesh: support },
-      ...springCoils.map((c) => ({ mesh: c })),
-    ];
-    pendulumRef.current = { springCoils, equilibriumY, springHeight };
+    pendulumRef.current = {
+      springCoils,
+      equilibriumY,
+      springHeight,
+      springArrow,
+      gravityArrow,
+      k,
+      m,
+    };
 
     setTheoreticalValues({
-      period: springPeriod(params.mass, params.springConstant),
-      frequency: 1 / springPeriod(params.mass, params.springConstant),
-      maxVelocity: amplitude * Math.sqrt(params.springConstant / params.mass),
+      period: springPeriod(m, k),
+      frequency: 1 / springPeriod(m, k),
+      maxVelocity: amplitude * Math.sqrt(k / m),
     });
   };
 
@@ -821,132 +1366,207 @@ const PhysicsLab = () => {
     });
   };
 
-  // Setup Free Fall
+  // ============ FREE FALL - EDUCATIONAL SETUP ============
   const setupFreeFall = (scene, params) => {
-    const height = params.height || 10;
+    const height = params.height || 12;
 
-    // Tower/platform
+    // === PLATFORM (Drop point) ===
     const platform = trackMesh(
       BABYLON.MeshBuilder.CreateBox(
         "platform",
-        { width: 2, height: 0.2, depth: 2 },
+        { width: 2.5, height: 0.25, depth: 2 },
         scene
       )
     );
     platform.position = new BABYLON.Vector3(0, height, 0);
-    const platformMat = new BABYLON.PBRMaterial("platformMat", scene);
-    platformMat.albedoColor = new BABYLON.Color3(0.3, 0.35, 0.4);
-    platformMat.metallic = 0.6;
+    const platformMat = new BABYLON.StandardMaterial("platformMat", scene);
+    platformMat.diffuseColor = new BABYLON.Color3(0.35, 0.35, 0.4);
     platform.material = platformMat;
 
-    // Support pillar
+    // === SUPPORT PILLAR ===
     const pillar = trackMesh(
       BABYLON.MeshBuilder.CreateBox(
         "pillar",
-        { width: 0.3, height: height, depth: 0.3 },
+        { width: 0.4, height: height, depth: 0.4 },
         scene
       )
     );
-    pillar.position = new BABYLON.Vector3(-0.7, height / 2, 0);
+    pillar.position = new BABYLON.Vector3(-1, height / 2, 0);
     pillar.material = platformMat;
 
-    // Falling object
+    // === FALLING BALL (Large, visible) ===
+    const ballDiameter = 0.7;
     const ball = trackMesh(
       BABYLON.MeshBuilder.CreateSphere(
         "fallingBall",
-        { diameter: 0.5, segments: 16 },
+        { diameter: ballDiameter, segments: 24 },
         scene
       )
     );
-    ball.position = new BABYLON.Vector3(0, height - 0.35, 0);
-    const ballMat = new BABYLON.PBRMaterial("fallingBallMat", scene);
-    ballMat.albedoColor = new BABYLON.Color3(0.9, 0.3, 0.2);
-    ballMat.emissiveColor = new BABYLON.Color3(0.2, 0.05, 0.02);
-    ballMat.metallic = 0.7;
+    ball.position = new BABYLON.Vector3(0, height - 0.5, 0);
+    const ballMat = new BABYLON.StandardMaterial("fallingBallMat", scene);
+    ballMat.diffuseColor = new BABYLON.Color3(1, 0.35, 0.25); // Bright red-orange
+    ballMat.specularColor = new BABYLON.Color3(1, 0.6, 0.5);
     ball.material = ballMat;
 
-    // Ground target
+    // === HEIGHT MARKERS (Every 2 meters) ===
+    for (let h = 2; h < height; h += 2) {
+      const marker = trackMesh(
+        BABYLON.MeshBuilder.CreateBox(
+          "heightMarker" + h,
+          { width: 0.8, height: 0.05, depth: 0.3 },
+          scene
+        )
+      );
+      marker.position = new BABYLON.Vector3(1.2, h, 0);
+      const markerMat = new BABYLON.StandardMaterial("markerMat" + h, scene);
+      markerMat.diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.7);
+      marker.material = markerMat;
+    }
+
+    // === GROUND TARGET ===
     const ground = trackMesh(
       BABYLON.MeshBuilder.CreateDisc(
         "groundTarget",
-        { radius: 1.5, tessellation: 32 },
+        { radius: 1.8, tessellation: 32 },
         scene
       )
     );
-    ground.position = new BABYLON.Vector3(0, 0.01, 0);
+    ground.position = new BABYLON.Vector3(0, 0.02, 0);
     ground.rotation.x = Math.PI / 2;
     const groundMat = new BABYLON.StandardMaterial("groundMat", scene);
-    groundMat.emissiveColor = new BABYLON.Color3(0.1, 0.5, 0.1);
+    groundMat.emissiveColor = new BABYLON.Color3(0.2, 0.6, 0.2);
     groundMat.alpha = 0.5;
     ground.material = groundMat;
 
+    // === GRAVITY ARROW (Constant force pointing down) ===
+    const gravityArrow = createForceArrow(
+      scene,
+      "gravity",
+      new BABYLON.Color3(1, 0.3, 0.3),
+      1.0
+    );
+    gravityArrow.position = new BABYLON.Vector3(0, height - 1.5, 0);
+    gravityArrow.rotation.z = Math.PI; // Points down
+
+    // === VELOCITY ARROW (Will grow during fall) ===
+    const velocityArrow = createForceArrow(
+      scene,
+      "velocity",
+      new BABYLON.Color3(0.3, 0.8, 0.3),
+      0.3
+    );
+    velocityArrow.position = new BABYLON.Vector3(0, height - 2, 0);
+    velocityArrow.rotation.z = Math.PI; // Points down
+
+    // Store references
     projectileRef.current = ball;
-    pendulumRef.current = { startHeight: height - 0.35 };
+    pendulumRef.current = {
+      startHeight: height - 0.5,
+      gravityArrow,
+      velocityArrow,
+      ballDiameter,
+    };
 
     const g = 9.81;
     setTheoreticalValues({
       final_velocity: Math.sqrt(2 * g * height).toFixed(2) + " m/s",
       fall_time: Math.sqrt((2 * height) / g).toFixed(2) + " s",
-      impact_energy: (0.5 * params.mass * 2 * g * height).toFixed(2) + " J",
+      impact_energy:
+        (0.5 * (params.mass || 1) * 2 * g * height).toFixed(2) + " J",
     });
   };
 
   // Setup Circular Motion
+  // ============ CIRCULAR MOTION - EDUCATIONAL SETUP ============
   const setupCircularMotion = (scene, params) => {
     const radius = params.radius || 2;
+    const centerY = 3;
 
-    // Central pivot
+    // === CENTRAL PIVOT ===
     const pivot = trackMesh(
-      BABYLON.MeshBuilder.CreateSphere("pivot", { diameter: 0.3 }, scene)
+      BABYLON.MeshBuilder.CreateSphere("pivot", { diameter: 0.4 }, scene)
     );
-    pivot.position = new BABYLON.Vector3(0, 3, 0);
-    const pivotMat = new BABYLON.PBRMaterial("pivotMat", scene);
-    pivotMat.albedoColor = new BABYLON.Color3(0.4, 0.4, 0.45);
-    pivotMat.metallic = 0.9;
+    pivot.position = new BABYLON.Vector3(0, centerY, 0);
+    const pivotMat = new BABYLON.StandardMaterial("pivotMat", scene);
+    pivotMat.diffuseColor = new BABYLON.Color3(0.4, 0.4, 0.45);
     pivot.material = pivotMat;
 
-    // Orbiting object
+    // === ORBITING BALL (Larger, visible) ===
+    const ballDiameter = 0.6;
     const orb = trackMesh(
-      BABYLON.MeshBuilder.CreateSphere("orbitingBall", { diameter: 0.4 }, scene)
-    );
-    orb.position = new BABYLON.Vector3(radius, 3, 0);
-    const orbMat = new BABYLON.PBRMaterial("orbMat", scene);
-    orbMat.albedoColor = new BABYLON.Color3(0.2, 0.6, 0.9);
-    orbMat.emissiveColor = new BABYLON.Color3(0.05, 0.15, 0.25);
-    orbMat.metallic = 0.8;
-    orb.material = orbMat;
-
-    // Connecting string/rod
-    const rod = trackMesh(
-      BABYLON.MeshBuilder.CreateCylinder(
-        "rod",
-        { height: radius, diameter: 0.05 },
+      BABYLON.MeshBuilder.CreateSphere(
+        "orbitingBall",
+        { diameter: ballDiameter, segments: 24 },
         scene
       )
     );
-    rod.position = new BABYLON.Vector3(radius / 2, 3, 0);
+    orb.position = new BABYLON.Vector3(radius, centerY, 0);
+    const orbMat = new BABYLON.StandardMaterial("orbMat", scene);
+    orbMat.diffuseColor = new BABYLON.Color3(0.2, 0.7, 1.0); // Bright cyan
+    orbMat.specularColor = new BABYLON.Color3(0.5, 0.8, 1);
+    orb.material = orbMat;
+
+    // === CONNECTING ROD ===
+    const rod = trackMesh(
+      BABYLON.MeshBuilder.CreateCylinder(
+        "rod",
+        { height: radius, diameter: 0.08 },
+        scene
+      )
+    );
+    rod.position = new BABYLON.Vector3(radius / 2, centerY, 0);
     rod.rotation.z = Math.PI / 2;
     const rodMat = new BABYLON.StandardMaterial("rodMat", scene);
     rodMat.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
     rod.material = rodMat;
 
-    // Orbit path visualization
+    // === ORBIT PATH (Visible circle) ===
     const orbitPath = trackMesh(
       BABYLON.MeshBuilder.CreateTorus(
         "orbitPath",
-        { diameter: radius * 2, thickness: 0.02, tessellation: 64 },
+        { diameter: radius * 2, thickness: 0.03, tessellation: 64 },
         scene
       )
     );
-    orbitPath.position = new BABYLON.Vector3(0, 3, 0);
+    orbitPath.position = new BABYLON.Vector3(0, centerY, 0);
     orbitPath.rotation.x = Math.PI / 2;
     const pathMat = new BABYLON.StandardMaterial("pathMat", scene);
-    pathMat.emissiveColor = new BABYLON.Color3(0.1, 0.3, 0.1);
-    pathMat.alpha = 0.5;
+    pathMat.emissiveColor = new BABYLON.Color3(0.2, 0.5, 0.2);
+    pathMat.alpha = 0.6;
     orbitPath.material = pathMat;
 
+    // === CENTRIPETAL FORCE ARROW (Red, points toward center) ===
+    const centripetalArrow = createForceArrow(
+      scene,
+      "centripetal",
+      new BABYLON.Color3(1, 0.3, 0.3),
+      0.8
+    );
+    centripetalArrow.position = new BABYLON.Vector3(radius - 0.4, centerY, 0);
+    centripetalArrow.rotation.z = Math.PI / 2; // Points toward center (left)
+
+    // === VELOCITY ARROW (Green, tangent to motion) ===
+    const velocityArrow = createForceArrow(
+      scene,
+      "velocity",
+      new BABYLON.Color3(0.3, 1, 0.3),
+      0.6
+    );
+    velocityArrow.position = new BABYLON.Vector3(radius, centerY + 0.5, 0);
+    velocityArrow.rotation.z = 0; // Points up initially (tangent)
+
+    // Store references
     projectileRef.current = orb;
-    pendulumRef.current = { pivot, rod, radius, centerY: 3 };
+    pendulumRef.current = {
+      pivot,
+      rod,
+      radius,
+      centerY,
+      centripetalArrow,
+      velocityArrow,
+      ballDiameter,
+    };
 
     const v = params.speed;
     const period = (2 * Math.PI * radius) / v;
@@ -959,20 +1579,22 @@ const PhysicsLab = () => {
   };
 
   // Setup Wave Motion
+  // ============ WAVE MOTION - EDUCATIONAL SETUP ============
   const setupWaveMotion = (scene, params) => {
     const amplitude = params.amplitude || 0.5;
     const wavelength = params.wavelength || 2;
     const numPoints = 100;
     const waveLength = 15;
+    const baseY = 2;
 
     // Create wave points
     const wavePoints = [];
     for (let i = 0; i <= numPoints; i++) {
       const x = (i / numPoints) * waveLength - waveLength / 2;
-      wavePoints.push(new BABYLON.Vector3(x, 2, 0));
+      wavePoints.push(new BABYLON.Vector3(x, baseY, 0));
     }
 
-    // Wave line (will be updated in animation)
+    // === WAVE LINE (Thicker, more visible) ===
     const waveLine = trackMesh(
       BABYLON.MeshBuilder.CreateLines(
         "waveLine",
@@ -980,39 +1602,74 @@ const PhysicsLab = () => {
         scene
       )
     );
-    waveLine.color = new BABYLON.Color3(0.2, 0.7, 0.9);
+    waveLine.color = new BABYLON.Color3(0.3, 0.8, 1.0); // Bright cyan
 
-    // Reference markers
-    const startMarker = trackMesh(
+    // === EQUILIBRIUM LINE (Horizontal reference) ===
+    const eqLine = trackMesh(
       BABYLON.MeshBuilder.CreateBox(
-        "startMarker",
-        { width: 0.1, height: 3, depth: 0.1 },
+        "waveEqLine",
+        { width: waveLength + 2, height: 0.02, depth: 0.3 },
         scene
       )
     );
-    startMarker.position = new BABYLON.Vector3(-waveLength / 2, 2, 0);
-    const markerMat = new BABYLON.StandardMaterial("markerMat", scene);
-    markerMat.diffuseColor = new BABYLON.Color3(0.5, 0.5, 0.5);
-    startMarker.material = markerMat;
+    eqLine.position = new BABYLON.Vector3(0, baseY, 0);
+    const eqMat = new BABYLON.StandardMaterial("waveEqMat", scene);
+    eqMat.emissiveColor = new BABYLON.Color3(0.3, 0.6, 0.3);
+    eqMat.alpha = 0.5;
+    eqLine.material = eqMat;
 
-    const endMarker = trackMesh(
+    // === AMPLITUDE MARKERS (Top and bottom lines) ===
+    const ampTopLine = trackMesh(
       BABYLON.MeshBuilder.CreateBox(
-        "endMarker",
-        { width: 0.1, height: 3, depth: 0.1 },
+        "ampTop",
+        { width: waveLength + 2, height: 0.01, depth: 0.2 },
         scene
       )
     );
-    endMarker.position = new BABYLON.Vector3(waveLength / 2, 2, 0);
-    endMarker.material = markerMat;
+    ampTopLine.position = new BABYLON.Vector3(0, baseY + amplitude, 0);
+    const ampMat = new BABYLON.StandardMaterial("ampMat", scene);
+    ampMat.emissiveColor = new BABYLON.Color3(1, 0.5, 0.2);
+    ampMat.alpha = 0.4;
+    ampTopLine.material = ampMat;
 
-    // Particle marker to show wave motion
+    const ampBotLine = trackMesh(
+      BABYLON.MeshBuilder.CreateBox(
+        "ampBot",
+        { width: waveLength + 2, height: 0.01, depth: 0.2 },
+        scene
+      )
+    );
+    ampBotLine.position = new BABYLON.Vector3(0, baseY - amplitude, 0);
+    ampBotLine.material = ampMat;
+
+    // === WAVELENGTH MARKERS (Vertical lines every wavelength) ===
+    for (let i = -3; i <= 3; i++) {
+      const marker = trackMesh(
+        BABYLON.MeshBuilder.CreateBox(
+          "wlMarker" + i,
+          { width: 0.03, height: amplitude * 2 + 0.5, depth: 0.2 },
+          scene
+        )
+      );
+      marker.position = new BABYLON.Vector3(i * wavelength, baseY, 0);
+      const markerMat = new BABYLON.StandardMaterial("wlMat" + i, scene);
+      markerMat.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.7);
+      markerMat.alpha = 0.5;
+      marker.material = markerMat;
+    }
+
+    // === PARTICLE MARKER (Shows wave motion - larger) ===
     const particle = trackMesh(
-      BABYLON.MeshBuilder.CreateSphere("waveParticle", { diameter: 0.3 }, scene)
+      BABYLON.MeshBuilder.CreateSphere(
+        "waveParticle",
+        { diameter: 0.4, segments: 16 },
+        scene
+      )
     );
-    particle.position = new BABYLON.Vector3(0, 2, 0);
-    const particleMat = new BABYLON.PBRMaterial("particleMat", scene);
-    particleMat.albedoColor = new BABYLON.Color3(0.9, 0.4, 0.2);
-    particleMat.emissiveColor = new BABYLON.Color3(0.3, 0.1, 0.05);
+    particle.position = new BABYLON.Vector3(0, baseY, 0);
+    const particleMat = new BABYLON.StandardMaterial("particleMat", scene);
+    particleMat.diffuseColor = new BABYLON.Color3(1, 0.5, 0.2); // Bright orange
+    particleMat.emissiveColor = new BABYLON.Color3(0.4, 0.15, 0.05);
     particle.material = particleMat;
 
     pendulumRef.current = {
@@ -1023,6 +1680,7 @@ const PhysicsLab = () => {
       waveLength,
       amplitude,
       wavelength,
+      baseY,
     };
 
     const v = params.frequency * wavelength;
@@ -1033,31 +1691,32 @@ const PhysicsLab = () => {
     });
   };
 
-  // Setup Atwood Machine
+  // ============ ATWOOD MACHINE - EDUCATIONAL SETUP ============
   const setupAtwoodMachine = (scene, params) => {
     const pulleyY = 6;
     const stringLength = 4;
+    const m1 = params.mass1 || 5;
+    const m2 = params.mass2 || 3;
 
-    // Pulley
+    // === PULLEY (Large, visible) ===
     const pulley = trackMesh(
       BABYLON.MeshBuilder.CreateTorus(
         "pulley",
-        { diameter: 0.8, thickness: 0.1, tessellation: 32 },
+        { diameter: 1.0, thickness: 0.12, tessellation: 32 },
         scene
       )
     );
     pulley.position = new BABYLON.Vector3(0, pulleyY, 0);
     pulley.rotation.x = Math.PI / 2;
-    const pulleyMat = new BABYLON.PBRMaterial("pulleyMat", scene);
-    pulleyMat.albedoColor = new BABYLON.Color3(0.4, 0.4, 0.45);
-    pulleyMat.metallic = 0.9;
+    const pulleyMat = new BABYLON.StandardMaterial("pulleyMat", scene);
+    pulleyMat.diffuseColor = new BABYLON.Color3(0.45, 0.45, 0.5);
     pulley.material = pulleyMat;
 
-    // Pulley axle
+    // === PULLEY AXLE ===
     const axle = trackMesh(
       BABYLON.MeshBuilder.CreateCylinder(
         "axle",
-        { height: 0.3, diameter: 0.15 },
+        { height: 0.4, diameter: 0.2 },
         scene
       )
     );
@@ -1065,19 +1724,19 @@ const PhysicsLab = () => {
     axle.rotation.x = Math.PI / 2;
     axle.material = pulleyMat;
 
-    // Support frame
+    // === SUPPORT FRAME ===
     const support = trackMesh(
       BABYLON.MeshBuilder.CreateBox(
         "support",
-        { width: 0.15, height: pulleyY + 0.5, depth: 0.15 },
+        { width: 0.2, height: pulleyY + 0.5, depth: 0.2 },
         scene
       )
     );
-    support.position = new BABYLON.Vector3(0, (pulleyY + 0.5) / 2, -0.3);
+    support.position = new BABYLON.Vector3(0, (pulleyY + 0.5) / 2, -0.4);
     support.material = pulleyMat;
 
-    // Mass 1 (heavier - left side)
-    const size1 = 0.3 + params.mass1 * 0.03;
+    // === MASS 1 (Heavier - left, larger cube) ===
+    const size1 = 0.4 + m1 * 0.04;
     const mass1 = trackMesh(
       BABYLON.MeshBuilder.CreateBox(
         "mass1",
@@ -1085,19 +1744,15 @@ const PhysicsLab = () => {
         scene
       )
     );
-    mass1.position = new BABYLON.Vector3(
-      -0.4,
-      pulleyY - stringLength / 2 - 0.5,
-      0
-    );
-    const mass1Mat = new BABYLON.PBRMaterial("mass1Mat", scene);
-    mass1Mat.albedoColor = new BABYLON.Color3(0.8, 0.3, 0.3);
-    mass1Mat.emissiveColor = new BABYLON.Color3(0.2, 0.05, 0.05);
-    mass1Mat.metallic = 0.6;
+    const y1 = pulleyY - stringLength / 2 - 0.5;
+    mass1.position = new BABYLON.Vector3(-0.5, y1, 0);
+    const mass1Mat = new BABYLON.StandardMaterial("mass1Mat", scene);
+    mass1Mat.diffuseColor = new BABYLON.Color3(0.9, 0.35, 0.35); // Red
+    mass1Mat.specularColor = new BABYLON.Color3(1, 0.5, 0.5);
     mass1.material = mass1Mat;
 
-    // Mass 2 (lighter - right side)
-    const size2 = 0.3 + params.mass2 * 0.03;
+    // === MASS 2 (Lighter - right, smaller cube) ===
+    const size2 = 0.4 + m2 * 0.04;
     const mass2 = trackMesh(
       BABYLON.MeshBuilder.CreateBox(
         "mass2",
@@ -1105,40 +1760,85 @@ const PhysicsLab = () => {
         scene
       )
     );
-    mass2.position = new BABYLON.Vector3(
-      0.4,
-      pulleyY - stringLength / 2 + 0.5,
-      0
-    );
-    const mass2Mat = new BABYLON.PBRMaterial("mass2Mat", scene);
-    mass2Mat.albedoColor = new BABYLON.Color3(0.3, 0.5, 0.8);
-    mass2Mat.emissiveColor = new BABYLON.Color3(0.05, 0.1, 0.2);
-    mass2Mat.metallic = 0.6;
+    const y2 = pulleyY - stringLength / 2 + 0.5;
+    mass2.position = new BABYLON.Vector3(0.5, y2, 0);
+    const mass2Mat = new BABYLON.StandardMaterial("mass2Mat", scene);
+    mass2Mat.diffuseColor = new BABYLON.Color3(0.35, 0.55, 0.9); // Blue
+    mass2Mat.specularColor = new BABYLON.Color3(0.5, 0.7, 1);
     mass2.material = mass2Mat;
 
-    // Strings
+    // === STRINGS ===
     const string1 = trackMesh(
       BABYLON.MeshBuilder.CreateCylinder(
         "string1",
-        { height: stringLength / 2, diameter: 0.02 },
+        { height: stringLength / 2 + 0.5, diameter: 0.03 },
         scene
       )
     );
-    string1.position = new BABYLON.Vector3(-0.4, pulleyY - stringLength / 4, 0);
+    string1.position = new BABYLON.Vector3(
+      -0.5,
+      pulleyY - stringLength / 4 - 0.25,
+      0
+    );
     const stringMat = new BABYLON.StandardMaterial("stringMat", scene);
-    stringMat.diffuseColor = new BABYLON.Color3(0.6, 0.6, 0.6);
+    stringMat.diffuseColor = new BABYLON.Color3(0.7, 0.7, 0.7);
     string1.material = stringMat;
 
     const string2 = trackMesh(
       BABYLON.MeshBuilder.CreateCylinder(
         "string2",
-        { height: stringLength / 2, diameter: 0.02 },
+        { height: stringLength / 2 - 0.5, diameter: 0.03 },
         scene
       )
     );
-    string2.position = new BABYLON.Vector3(0.4, pulleyY - stringLength / 4, 0);
+    string2.position = new BABYLON.Vector3(
+      0.5,
+      pulleyY - stringLength / 4 + 0.25,
+      0
+    );
     string2.material = stringMat;
 
+    // === WEIGHT ARROWS (Red, pointing down from each mass) ===
+    const weight1Arrow = createForceArrow(
+      scene,
+      "weight1",
+      new BABYLON.Color3(1, 0.3, 0.3),
+      0.7
+    );
+    weight1Arrow.position = new BABYLON.Vector3(-0.5, y1 - size1 / 2 - 0.5, 0);
+    weight1Arrow.rotation.z = Math.PI; // Down
+    weight1Arrow.scaling.y = m1 / 5; // Scale by mass
+
+    const weight2Arrow = createForceArrow(
+      scene,
+      "weight2",
+      new BABYLON.Color3(1, 0.3, 0.3),
+      0.5
+    );
+    weight2Arrow.position = new BABYLON.Vector3(0.5, y2 - size2 / 2 - 0.4, 0);
+    weight2Arrow.rotation.z = Math.PI; // Down
+    weight2Arrow.scaling.y = m2 / 5; // Scale by mass
+
+    // === TENSION ARROWS (Blue, pointing up from each mass) ===
+    const tension1Arrow = createForceArrow(
+      scene,
+      "tension1",
+      new BABYLON.Color3(0.3, 0.7, 1),
+      0.5
+    );
+    tension1Arrow.position = new BABYLON.Vector3(-0.5, y1 + size1 / 2 + 0.4, 0);
+    tension1Arrow.rotation.z = 0; // Up
+
+    const tension2Arrow = createForceArrow(
+      scene,
+      "tension2",
+      new BABYLON.Color3(0.3, 0.7, 1),
+      0.5
+    );
+    tension2Arrow.position = new BABYLON.Vector3(0.5, y2 + size2 / 2 + 0.4, 0);
+    tension2Arrow.rotation.z = 0; // Up
+
+    // Store references
     projectileRef.current = mass1;
     collisionObjectsRef.current = [{ mesh: mass2 }];
     pendulumRef.current = {
@@ -1149,13 +1849,17 @@ const PhysicsLab = () => {
       pulley,
       pulleyY,
       stringLength,
-      initialY1: mass1.position.y,
-      initialY2: mass2.position.y,
+      initialY1: y1,
+      initialY2: y2,
+      size1,
+      size2,
+      weight1Arrow,
+      weight2Arrow,
+      tension1Arrow,
+      tension2Arrow,
     };
 
     const g = 9.81;
-    const m1 = params.mass1,
-      m2 = params.mass2;
     const a = ((m1 - m2) * g) / (m1 + m2);
     const T = (2 * m1 * m2 * g) / (m1 + m2);
     setTheoreticalValues({
@@ -1299,7 +2003,7 @@ const PhysicsLab = () => {
           continueSimulation = false;
       }
 
-      if (continueSimulation && elapsed < 15) {
+      if (continueSimulation && elapsed < 60) {
         animationFrameRef.current = requestAnimationFrame(animate);
       } else {
         stopSimulation();
@@ -1413,35 +2117,79 @@ const PhysicsLab = () => {
   };
 
   // PENDULUM ANIMATION
+  // PENDULUM ANIMATION - Educational with force arrows
   const animatePendulum = (t, params) => {
     if (!pendulumRef.current?.bob) return false;
 
-    const { bob, string } = pendulumRef.current;
-    const length = params.length || 1;
-    const amplitude = ((params.amplitude || 15) * Math.PI) / 180;
-    const pivotHeight = 6;
+    const {
+      bob,
+      string,
+      gravityArrow,
+      tensionArrow,
+      length,
+      pivotHeight,
+      bobDiameter,
+    } = pendulumRef.current;
+    const actualLength = length || params.length || 2;
+    const amplitude = ((params.amplitude || 20) * Math.PI) / 180;
+    const actualPivotHeight = pivotHeight || 6;
 
-    const theta = pendulumPosition(amplitude, length, t);
+    // Calculate current angle using physics
+    const theta = pendulumPosition(amplitude, actualLength, t);
+    const angularVelocity = pendulumVelocity(amplitude, actualLength, t);
 
     // Update bob position
-    bob.position.x = length * Math.sin(theta);
-    bob.position.y = pivotHeight - length * Math.cos(theta);
+    bob.position.x = actualLength * Math.sin(theta);
+    bob.position.y = actualPivotHeight - actualLength * Math.cos(theta);
 
     // Update string
-    updatePendulumString(string, pivotHeight, bob.position);
+    if (string) updatePendulumString(string, actualPivotHeight, bob.position);
 
-    // Measurements
+    // === UPDATE FORCE ARROWS ===
+    const g = 9.81;
+    const gravityForce = g; // Constant
+    const tensionForce =
+      g * Math.cos(theta) + actualLength * angularVelocity * angularVelocity; // T = mg*cos(θ) + mLω²
+
+    // Gravity arrow - always points straight down
+    if (gravityArrow) {
+      gravityArrow.position.x = bob.position.x;
+      gravityArrow.position.y = bob.position.y - (bobDiameter || 0.8) / 2 - 0.4;
+      gravityArrow.rotation.z = Math.PI; // Point down
+      gravityArrow.scaling.y = Math.min(1.5, gravityForce / 10); // Scale by force
+    }
+
+    // Tension arrow - points along string toward pivot
+    if (tensionArrow) {
+      tensionArrow.position.x = bob.position.x;
+      tensionArrow.position.y = bob.position.y + (bobDiameter || 0.8) / 2 + 0.3;
+      // Angle to point toward pivot
+      tensionArrow.rotation.z = -theta;
+      tensionArrow.scaling.y = Math.min(1.2, tensionForce / 15); // Scale by force
+    }
+
+    // Calculate current velocity for display
+    const velocity = actualLength * Math.abs(angularVelocity);
+
+    // Measurements with educational values
     setMeasurements({
       time: t.toFixed(2) + "s",
       angle: ((theta * 180) / Math.PI).toFixed(1) + "°",
-      period: pendulumPeriod(length).toFixed(3) + "s",
-      oscillations: (t / pendulumPeriod(length)).toFixed(1),
+      velocity: velocity.toFixed(2) + " m/s",
+      period: pendulumPeriod(actualLength).toFixed(3) + "s",
+      oscillations: (t / pendulumPeriod(actualLength)).toFixed(1),
     });
 
     return true;
   };
 
-  // COLLISION ANIMATION
+  // Helper: Calculate pendulum angular velocity
+  const pendulumVelocity = (amplitude, length, t) => {
+    const omega = Math.sqrt(9.81 / length);
+    return -amplitude * omega * Math.sin(omega * t);
+  };
+
+  // COLLISION ANIMATION - With visual feedback
   const animateCollision = (t, params) => {
     if (collisionObjectsRef.current.length < 3) return false;
 
@@ -1454,7 +2202,21 @@ const PhysicsLab = () => {
     const initialDistance = 8; // Distance between objects
     const collisionTime = Math.abs(initialDistance / relativeVelocity);
 
-    let hasCollided = t >= collisionTime;
+    const hasCollided = t >= collisionTime;
+    const justCollided = hasCollided && t < collisionTime + 0.3; // Flash for 0.3s
+
+    // Visual collision feedback - flash on impact
+    if (obj1.material && obj2.material) {
+      if (justCollided) {
+        // Flash bright on collision
+        obj1.material.emissiveColor = new BABYLON.Color3(0.5, 0.8, 1.0);
+        obj2.material.emissiveColor = new BABYLON.Color3(1.0, 0.7, 0.3);
+      } else {
+        // Normal colors
+        obj1.material.emissiveColor = new BABYLON.Color3(0.05, 0.1, 0.2);
+        obj2.material.emissiveColor = new BABYLON.Color3(0.2, 0.1, 0.05);
+      }
+    }
 
     if (!hasCollided) {
       // Before collision - objects moving towards each other
@@ -1480,7 +2242,11 @@ const PhysicsLab = () => {
 
     setMeasurements({
       time: t.toFixed(2) + "s",
-      status: hasCollided ? "After Collision" : "Before Collision",
+      status: justCollided
+        ? "💥 COLLISION!"
+        : hasCollided
+        ? "After Collision"
+        : "Before Collision",
       obj1_x: obj1.position.x.toFixed(2) + "m",
       obj2_x: obj2.position.x.toFixed(2) + "m",
       total_momentum:
@@ -1492,41 +2258,78 @@ const PhysicsLab = () => {
         ).toFixed(2) + " kg⋅m/s",
     });
 
-    return t < 6;
+    // Continue until objects are out of view (e.g. x > 8 or x < -8)
+    return Math.abs(obj1.position.x) < 10 && Math.abs(obj2.position.x) < 10;
   };
 
-  // INCLINED PLANE ANIMATION
+  // INCLINED PLANE ANIMATION - Ball moves LEFT to RIGHT (X-axis)
+  // INCLINED PLANE ANIMATION - Educational with force arrows
   const animateInclinedPlane = (t, params) => {
     if (!projectileRef.current || collisionObjectsRef.current.length < 1)
       return false;
 
     const planeData = collisionObjectsRef.current[0];
-    const angleRad = planeData.angle;
     const planeLength = planeData.length;
     const planeHeight = planeData.height;
+    const planeWidth = planeData.width;
+    const friction = planeData.friction || 0;
+    const startX = planeData.startX;
+    const startY = planeData.startY;
+    const ballRadius = planeData.ballRadius || 0.35;
 
-    const a = inclinedPlaneAcceleration(params.angle);
-    const distance = 0.5 * a * t * t;
-    const velocity = a * t;
+    // Acceleration: a = g(sin θ - μ cos θ)
+    const g = 9.81;
+    const angleRad = planeData.angle;
+    const a = g * (Math.sin(angleRad) - friction * Math.cos(angleRad));
 
-    if (distance >= planeLength) {
-      // Reached bottom
+    if (a <= 0) {
       setMeasurements({
-        finalVelocity: Math.sqrt(2 * a * planeLength).toFixed(2) + " m/s",
-        timeToBottom: Math.sqrt((2 * planeLength) / a).toFixed(2) + " s",
-        acceleration: a.toFixed(2) + " m/s²",
+        status: "Ball stationary (friction too high)",
+        acceleration: "0 m/s²",
       });
       return false;
     }
 
-    // Position along incline
+    const distance = 0.5 * a * t * t;
+    const velocity = a * t;
+
+    if (distance >= planeLength) {
+      setMeasurements({
+        finalVelocity: Math.sqrt(2 * a * planeLength).toFixed(2) + " m/s",
+        timeToBottom: Math.sqrt((2 * planeLength) / a).toFixed(2) + " s",
+        acceleration: a.toFixed(2) + " m/s²",
+        friction: (friction * 100).toFixed(0) + "%",
+      });
+      return false;
+    }
+
+    // Update ball position
     const ball = projectileRef.current;
     const progress = distance / planeLength;
-    const startZ = -planeLength / 2 + 0.3;
-    const endZ = planeLength / 2;
+    ball.position.x = startX + progress * planeWidth;
+    ball.position.y = startY - progress * planeHeight;
+    ball.position.z = 0;
 
-    ball.position.z = startZ + progress * (endZ - startZ);
-    ball.position.y = planeHeight * (1 - progress) + 0.25;
+    // === UPDATE FORCE ARROWS TO FOLLOW BALL ===
+    const { weightArrow, parallelArrow, normalArrow, frictionArrow } =
+      planeData;
+
+    if (weightArrow) {
+      weightArrow.position.x = ball.position.x;
+      weightArrow.position.y = ball.position.y - ballRadius - 0.5;
+    }
+    if (parallelArrow) {
+      parallelArrow.position.x = ball.position.x + 0.3 * Math.cos(angleRad);
+      parallelArrow.position.y = ball.position.y - 0.3 * Math.sin(angleRad);
+    }
+    if (normalArrow) {
+      normalArrow.position.x = ball.position.x - 0.3 * Math.sin(angleRad);
+      normalArrow.position.y = ball.position.y + 0.3 * Math.cos(angleRad);
+    }
+    if (frictionArrow) {
+      frictionArrow.position.x = ball.position.x - 0.2 * Math.cos(angleRad);
+      frictionArrow.position.y = ball.position.y + 0.2 * Math.sin(angleRad);
+    }
 
     setMeasurements({
       time: t.toFixed(2) + "s",
@@ -1574,7 +2377,7 @@ const PhysicsLab = () => {
     return true;
   };
 
-  // NEWTON'S CRADLE ANIMATION
+  // NEWTON'S CRADLE ANIMATION - Improved with proper phase separation
   const animateCradle = (t, params) => {
     if (!pendulumRef.current?.ballsData) return false;
 
@@ -1582,22 +2385,38 @@ const PhysicsLab = () => {
     if (ballsData.length === 0) return false;
 
     const pullBack = Math.round(params.pullBack || 1);
-    const period = 1.5;
-    const maxAngle = 0.5;
+    const period = 1.2; // Faster period for snappier motion
+    const maxAngle = 0.45; // About 26 degrees
+    const halfPeriod = period / 2;
+
+    // Phase within the current cycle (0 to period)
+    const phase = t % period;
 
     ballsData.forEach((ballData, i) => {
       const { ball, string, x } = ballData;
-
       let angle = 0;
+
       if (i < pullBack) {
-        // Left balls swing
-        angle = maxAngle * Math.cos((2 * Math.PI * t) / period);
-        if (angle < 0) angle = 0;
+        // LEFT balls: swing out in first half, rest in second half
+        if (phase < halfPeriod) {
+          // Swing out (positive angle = left)
+          angle = maxAngle * Math.sin((Math.PI * phase) / halfPeriod);
+        } else {
+          // Rest at vertical (impact transferred to right side)
+          angle = 0;
+        }
       } else if (i >= ballsData.length - pullBack) {
-        // Right balls swing (opposite phase)
-        angle = -maxAngle * Math.cos((2 * Math.PI * t) / period);
-        if (angle > 0) angle = 0;
+        // RIGHT balls: rest in first half, swing out in second half
+        if (phase < halfPeriod) {
+          // Rest at vertical
+          angle = 0;
+        } else {
+          // Swing out (negative angle = right)
+          angle =
+            -maxAngle * Math.sin((Math.PI * (phase - halfPeriod)) / halfPeriod);
+        }
       }
+      // Middle balls stay stationary (angle = 0)
 
       // Update ball position
       ball.position.x = x + stringLength * Math.sin(angle);
@@ -1611,34 +2430,50 @@ const PhysicsLab = () => {
 
     setMeasurements({
       time: t.toFixed(2) + "s",
-      left_balls_swinging: pullBack,
-      right_balls_swinging: pullBack,
-      oscillations: (t / period).toFixed(1),
+      phase: phase < halfPeriod ? "Left swinging" : "Right swinging",
+      balls_pulled: pullBack,
+      oscillations: Math.floor(t / period),
     });
 
     return true;
   };
 
   // FREE FALL ANIMATION
+  // FREE FALL ANIMATION - Educational with arrows
   const animateFreeFall = (t, params) => {
     if (!projectileRef.current || !pendulumRef.current) return false;
 
     const g = 9.81;
-    const startHeight = pendulumRef.current.startHeight;
+    const { startHeight, gravityArrow, velocityArrow, ballDiameter } =
+      pendulumRef.current;
     const y = startHeight - 0.5 * g * t * t;
     const v = g * t;
 
-    if (y <= 0.25) {
-      projectileRef.current.position.y = 0.25;
+    if (y <= 0.35) {
+      projectileRef.current.position.y = 0.35;
       setMeasurements({
         final_velocity: Math.sqrt(2 * g * startHeight).toFixed(2) + " m/s",
         fall_time: t.toFixed(3) + " s",
-        impact_energy: (0.5 * params.mass * v * v).toFixed(2) + " J",
+        impact_energy: (0.5 * (params.mass || 1) * v * v).toFixed(2) + " J",
       });
       return false;
     }
 
     projectileRef.current.position.y = y;
+
+    // === UPDATE ARROWS ===
+    const ballRadius = (ballDiameter || 0.7) / 2;
+
+    // Gravity arrow follows ball
+    if (gravityArrow) {
+      gravityArrow.position.y = y - ballRadius - 0.8;
+    }
+
+    // Velocity arrow grows as ball speeds up
+    if (velocityArrow) {
+      velocityArrow.position.y = y - ballRadius - 1.5;
+      velocityArrow.scaling.y = Math.min(2, v / 10); // Scale with velocity
+    }
 
     setMeasurements({
       time: t.toFixed(2) + "s",
@@ -1732,7 +2567,7 @@ const PhysicsLab = () => {
     return true;
   };
 
-  // ATWOOD MACHINE ANIMATION
+  // ATWOOD MACHINE ANIMATION - Fixed to handle m1 < m2 case
   const animateAtwoodMachine = (t, params) => {
     if (!pendulumRef.current?.mass1) return false;
 
@@ -1749,45 +2584,52 @@ const PhysicsLab = () => {
     const g = 9.81;
     const m1 = params.mass1,
       m2 = params.mass2;
+
+    // Acceleration can be positive or negative depending on mass ratio
+    // a > 0 means mass1 goes down, a < 0 means mass1 goes up
     const a = ((m1 - m2) * g) / (m1 + m2);
 
-    // Distance moved
+    // Distance moved (can be negative if m2 > m1)
     const s = 0.5 * a * t * t;
     const v = a * t;
 
-    // Limit movement
+    // Limit movement in either direction
     const maxDrop = 3;
-    if (s >= maxDrop) {
+    if (Math.abs(s) >= maxDrop) {
+      const finalV = Math.sign(a) * Math.sqrt(2 * Math.abs(a) * maxDrop);
       setMeasurements({
-        final_velocity: (a * Math.sqrt((2 * maxDrop) / a)).toFixed(2) + " m/s",
+        final_velocity: Math.abs(finalV).toFixed(2) + " m/s",
         distance_moved: maxDrop.toFixed(2) + " m",
+        heavier_mass: m1 > m2 ? "Left (Red)" : "Right (Blue)",
         time: t.toFixed(2) + "s",
       });
       return false;
     }
 
-    // Mass 1 goes down, Mass 2 goes up
+    // Mass 1 position changes by -s (down if a>0, up if a<0)
+    // Mass 2 position changes by +s (up if a>0, down if a<0)
     mass1.position.y = initialY1 - s;
     mass2.position.y = initialY2 + s;
 
     // Update strings
-    const stringLen1 = pulleyY - mass1.position.y - 0.2;
-    const stringLen2 = pulleyY - mass2.position.y - 0.2;
+    const stringLen1 = Math.max(0.1, pulleyY - mass1.position.y - 0.2);
+    const stringLen2 = Math.max(0.1, pulleyY - mass2.position.y - 0.2);
     string1.scaling.y = stringLen1 / 2;
     string1.position.y = pulleyY - stringLen1 / 2;
     string2.scaling.y = stringLen2 / 2;
     string2.position.y = pulleyY - stringLen2 / 2;
 
-    // Rotate pulley
+    // Rotate pulley based on movement direction
     if (pulley) {
-      pulley.rotation.z = s / 0.4; // Angular rotation based on string movement
+      pulley.rotation.z = s / 0.4;
     }
 
     setMeasurements({
       time: t.toFixed(2) + "s",
-      distance: s.toFixed(3) + " m",
-      velocity: v.toFixed(3) + " m/s",
-      acceleration: a.toFixed(3) + " m/s²",
+      distance: Math.abs(s).toFixed(3) + " m",
+      velocity: Math.abs(v).toFixed(3) + " m/s",
+      acceleration: Math.abs(a).toFixed(3) + " m/s²",
+      direction: a >= 0 ? "Left↓ Right↑" : "Left↑ Right↓",
     });
 
     return true;
@@ -1867,6 +2709,49 @@ const PhysicsLab = () => {
     }
   };
 
+  // Camera control functions for 3D navigation
+  const rotateCamera = (direction) => {
+    if (!cameraRef.current) return;
+    const camera = cameraRef.current;
+    const step = 0.15;
+    switch (direction) {
+      case "left":
+        camera.alpha -= step;
+        break;
+      case "right":
+        camera.alpha += step;
+        break;
+      case "up":
+        camera.beta = Math.max(0.1, camera.beta - step);
+        break;
+      case "down":
+        camera.beta = Math.min(Math.PI - 0.1, camera.beta + step);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const zoomCamera = (direction) => {
+    if (!cameraRef.current) return;
+    const camera = cameraRef.current;
+    const step = 2;
+    if (direction === "in") {
+      camera.radius = Math.max(camera.lowerRadiusLimit, camera.radius - step);
+    } else {
+      camera.radius = Math.min(camera.upperRadiusLimit, camera.radius + step);
+    }
+  };
+
+  const resetCamera = () => {
+    if (!cameraRef.current) return;
+    const camera = cameraRef.current;
+    camera.alpha = -Math.PI / 2;
+    camera.beta = Math.PI / 3.5;
+    camera.radius = 15;
+    camera.target = new BABYLON.Vector3(0, 2, 0);
+  };
+
   return (
     <div className="physics-lab">
       {isLoading && (
@@ -1901,6 +2786,41 @@ const PhysicsLab = () => {
 
       <div className="physics-content">
         <canvas ref={canvasRef} className="physics-canvas" />
+
+        {/* 3D Navigation Controls */}
+        <div className="physics-nav-controls">
+          <div className="nav-control-group">
+            <span className="nav-label">Rotate</span>
+            <button onClick={() => rotateCamera("left")} title="Rotate Left">
+              ◀
+            </button>
+            <button onClick={() => rotateCamera("up")} title="Rotate Up">
+              ▲
+            </button>
+            <button onClick={() => rotateCamera("down")} title="Rotate Down">
+              ▼
+            </button>
+            <button onClick={() => rotateCamera("right")} title="Rotate Right">
+              ▶
+            </button>
+          </div>
+          <div className="nav-control-group">
+            <span className="nav-label">Zoom</span>
+            <button onClick={() => zoomCamera("in")} title="Zoom In">
+              +
+            </button>
+            <button onClick={() => zoomCamera("out")} title="Zoom Out">
+              −
+            </button>
+          </div>
+          <button
+            className="nav-reset-btn"
+            onClick={resetCamera}
+            title="Reset View"
+          >
+            ⟲ Reset View
+          </button>
+        </div>
 
         {showExperimentPanel && (
           <aside className="physics-experiments-panel">

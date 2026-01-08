@@ -1,0 +1,457 @@
+/* ClassDetails.css - Analytics dashboard styling */
+
+.class-details {
+    min-height: 100vh;
+    background: var(--neutral-950, #09090b);
+    padding: 2rem;
+}
+
+.loading-state,
+.error-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    color: var(--neutral-400, #a1a1aa);
+    text-align: center;
+}
+
+.error-state h2 {
+    color: #f87171;
+    margin-bottom: 0.5rem;
+}
+
+.error-state a {
+    color: #a5b4fc;
+    margin-top: 1rem;
+}
+
+/* Header */
+.class-details-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.header-left {
+    flex: 1;
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    color: var(--neutral-400);
+    font-size: 0.875rem;
+    text-decoration: none;
+    margin-bottom: 0.5rem;
+    transition: color 0.2s ease;
+}
+
+.back-link:hover {
+    color: #a5b4fc;
+}
+
+.class-details-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--neutral-100, #f4f4f5);
+    margin: 0 0 0.75rem 0;
+}
+
+.class-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.class-code-badge {
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.join-code-display {
+    font-size: 0.875rem;
+    color: var(--neutral-400);
+}
+
+.join-code-display strong {
+    color: #4ade80;
+    font-family: monospace;
+    letter-spacing: 0.1em;
+}
+
+.meta-badge {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--neutral-400);
+    padding: 0.25rem 0.75rem;
+    border-radius: 0.375rem;
+    font-size: 0.75rem;
+}
+
+.header-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.export-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1.25rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 0.5rem;
+    color: #4ade80;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.export-btn:hover {
+    background: rgba(34, 197, 94, 0.2);
+}
+
+.export-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0.75rem;
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem;
+}
+
+.stat-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.stat-icon.students {
+    background: rgba(99, 102, 241, 0.15);
+    color: #a5b4fc;
+}
+
+.stat-icon.experiments {
+    background: rgba(139, 92, 246, 0.15);
+    color: #c4b5fd;
+}
+
+.stat-icon.submissions {
+    background: rgba(34, 197, 94, 0.15);
+    color: #4ade80;
+}
+
+.stat-icon.average {
+    background: rgba(234, 179, 8, 0.15);
+    color: #facc15;
+}
+
+.stat-value {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--neutral-100);
+    line-height: 1;
+}
+
+.stat-label {
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
+    margin-top: 0.25rem;
+}
+
+/* Chart Section */
+.chart-section {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.chart-section h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-200);
+    margin: 0 0 1.25rem 0;
+}
+
+.score-distribution {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.score-bar-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.score-bar {
+    height: 28px;
+    min-width: 40px;
+    border-radius: 0.375rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+    transition: width 0.5s ease;
+}
+
+.score-bar.excellent {
+    background: linear-gradient(90deg, #22c55e 0%, #16a34a 100%);
+}
+
+.score-bar.good {
+    background: linear-gradient(90deg, #eab308 0%, #ca8a04 100%);
+}
+
+.score-bar.average {
+    background: linear-gradient(90deg, #f97316 0%, #ea580c 100%);
+}
+
+.score-bar.needs-work {
+    background: linear-gradient(90deg, #ef4444 0%, #dc2626 100%);
+}
+
+.score-label {
+    font-size: 0.8125rem;
+    color: var(--neutral-400);
+    white-space: nowrap;
+}
+
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    padding-bottom: 0.5rem;
+}
+
+.tab {
+    padding: 0.625rem 1.25rem;
+    background: transparent;
+    border: none;
+    color: var(--neutral-400);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 0.5rem 0.5rem 0 0;
+    transition: all 0.2s ease;
+}
+
+.tab:hover {
+    color: var(--neutral-200);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.tab.active {
+    color: #a5b4fc;
+    background: rgba(99, 102, 241, 0.1);
+}
+
+/* Students Table */
+.students-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.students-table th,
+.students-table td {
+    text-align: left;
+    padding: 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.students-table th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--neutral-500);
+    font-weight: 600;
+}
+
+.students-table tbody tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.student-info {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.student-avatar {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.student-name {
+    font-weight: 500;
+    color: var(--neutral-100);
+}
+
+.student-email {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+}
+
+.progress-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.progress-bar-bg {
+    width: 80px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 3px;
+    transition: width 0.3s ease;
+}
+
+.progress-cell span {
+    font-size: 0.8125rem;
+    color: var(--neutral-400);
+}
+
+.empty-message {
+    text-align: center;
+    padding: 3rem;
+    color: var(--neutral-500);
+}
+
+/* Experiment Cards */
+.experiment-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+}
+
+.experiment-stat-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 0.75rem;
+    padding: 1.25rem;
+}
+
+.exp-stat-header {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+}
+
+.completion-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+.completion-circle::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    background: #18181b;
+    border-radius: 50%;
+}
+
+.completion-circle span {
+    position: relative;
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #a5b4fc;
+}
+
+.exp-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.exp-stat-item {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+.stat-num {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--neutral-100);
+}
+
+.stat-text {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .class-details-header {
+        flex-direction: column;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .students-table {
+        display: block;
+        overflow-x: auto;
+    }
+}

@@ -851,3 +851,76 @@
 .physics-simulating {
     animation: pulse 1s ease infinite;
 }
+
+/* 3D Navigation Controls */
+.physics-nav-controls {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    background: var(--physics-bg-glass);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid var(--physics-border);
+    border-radius: 12px;
+    padding: 0.75rem;
+    z-index: 60;
+    box-shadow: var(--physics-shadow-soft);
+}
+
+.nav-control-group {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.nav-label {
+    font-size: 0.7rem;
+    color: var(--physics-text-muted);
+    min-width: 42px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.physics-nav-controls button {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--physics-border);
+    border-radius: 8px;
+    color: var(--physics-text-secondary);
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.physics-nav-controls button:hover {
+    background: var(--physics-accent-primary);
+    border-color: var(--physics-accent-primary);
+    color: white;
+    transform: scale(1.05);
+}
+
+.physics-nav-controls button:active {
+    transform: scale(0.95);
+}
+
+.nav-reset-btn {
+    width: auto !important;
+    padding: 0 0.75rem !important;
+    font-size: 0.75rem !important;
+    margin-top: 0.25rem;
+    background: var(--physics-gradient-primary) !important;
+    border: none !important;
+    color: white !important;
+}
+
+.nav-reset-btn:hover {
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.4);
+}
+

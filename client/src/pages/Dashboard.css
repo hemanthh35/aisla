@@ -65,6 +65,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+    overflow-y: auto;
+    min-height: 0;
 }
 
 .sidebar-section {
@@ -114,6 +116,7 @@
 }
 
 .sidebar-footer {
+    margin-top: auto;
     padding-top: 1rem;
     border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -160,6 +163,12 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.sidebar-user-role {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    text-transform: capitalize;
 }
 
 /* Main Content */

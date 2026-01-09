@@ -12,6 +12,7 @@ import FacultyDashboard from './pages/FacultyDashboard';
 import CreateExperiment from './pages/CreateExperiment';
 import ExperimentView from './pages/ExperimentView';
 import QuizPage from './pages/QuizPage';
+import LabsHub from './pages/LabsHub';
 import ResultPage from './pages/ResultPage';
 import BadgeManagement from './pages/BadgeManagement';
 import DiagramGenerator from './pages/DiagramGenerator';
@@ -76,9 +77,27 @@ function App() {
               }
             />
 
-            {/* Faculty: Create Experiment */}
+            {/* Labs Hub */}
+            <Route
+              path="/labs"
+              element={
+                <PrivateRoute>
+                  <LabsHub />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Faculty: Create & Edit Experiment */}
             <Route
               path="/experiment/create"
+              element={
+                <PrivateRoute>
+                  <CreateExperiment />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/experiment/:id/edit"
               element={
                 <PrivateRoute>
                   <CreateExperiment />

@@ -266,7 +266,7 @@ Provide practical, relatable examples.`
         TEXT_MODEL,
         prompts[intent] || prompts.simple,
         systemPrompts[intent] || systemPrompts.simple,
-        { maxTokens: 1500 }
+        { maxTokens: 500 }
     );
 
     if (!result.success) {
@@ -284,15 +284,36 @@ export async function streamExplanation(res, content, intent = 'simple') {
     console.log(`📖 [AI] Streaming ${intent} explanation`);
 
     const prompts = {
-        simple: 'Explain this in very simple terms. Use everyday examples and analogies.',
-        detailed: 'Give a comprehensive technical explanation with all details.',
-        example: 'Give 3 real-world examples of how this is used in everyday life.'
+        simple: `Explain this concept in 4-5 SHORT bullet points. Each bullet should be ONE clear sentence. No code, no tables, just simple facts.
+
+Content: ${content}
+
+Format:
+• Key point 1 (one sentence)
+• Key point 2 (one sentence)
+• Key point 3 (one sentence)
+• Key point 4 (one sentence)`,
+        detailed: `Provide a SHORT technical explanation (MAX 150 words). Structure:
+1. What it is (1 sentence)
+2. How it works (2-3 sentences)
+3. Key insight (1 sentence)
+
+Content: ${content}
+
+Keep it CONCISE and focused.`,
+        example: `Give 2 SHORT, practical examples (MAX 100 words total). For each:
+- What: Brief scenario (5-10 words)
+- Why: How concept applies (1 sentence)
+
+Content: ${content}
+
+Keep examples brief and clear.`
     };
 
     const systemPrompts = {
-        simple: 'You are a friendly teacher. Make complex topics simple and fun.',
-        detailed: 'You are an expert professor. Give thorough technical explanations.',
-        example: 'You are a practical instructor. Connect theory to real-world uses.'
+        simple: 'You are a concise teacher. Output ONLY bullet points. No extra text.',
+        detailed: 'You are an expert who explains briefly. MAX 150 words. No fluff.',
+        example: 'You are practical. Give 2 SHORT examples. MAX 100 words total.'
     };
 
     // Helper to send SSE with flush
@@ -326,7 +347,9 @@ export async function streamExplanation(res, content, intent = 'simple') {
                 stream: true,
                 options: {
                     temperature: 0.7,
-                    num_predict: 1500
+                    num_predict: 400,
+                    top_p: 0.9,
+                    top_k: 40
                 }
             })
         });
@@ -488,11 +511,49 @@ export async function evaluateQuiz(questions, userAnswers) {
 }
 
 /**
- * Extract text from image using LLaVA
+ * Extract text from image using Gemini Vision (fast/accurate)
  */
 export async function extractTextFromImage(imageBase64) {
     console.log(`🖼️ [AI] Extracting text from image`);
 
+    // Try Gemini Vision first
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (apiKey) {
+        try {
+            const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
+            const response = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [
+                                { text: "Extract all text from this image exactly as written. If it's a scientific experiment, preserve the structure (Aim, Procedure, etc.)." },
+                                {
+                                    inline_data: {
+                                        mime_type: "image/jpeg",
+                                        data: base64Data
+                                    }
+                                }
+                            ]
+                        }]
+                    })
+                }
+            );
+
+            if (response.ok) {
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                return { success: true, text };
+            }
+        } catch (err) {
+            console.error('Gemini Vision failed:', err);
+        }
+    }
+
+    // Fallback to LLaVA (local)
     try {
         const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
 
@@ -518,6 +579,56 @@ export async function extractTextFromImage(imageBase64) {
 }
 
 /**
+ * Extract text from PDF using Gemini (High context/accuracy)
+ */
+export async function extractTextFromPDF(pdfBase64) {
+    console.log(`📄 [AI] Extracting text from PDF`);
+
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+        return { success: false, error: 'Gemini API key required for PDF parsing' };
+    }
+
+    try {
+        const base64Data = pdfBase64.replace(/^data:application\/pdf;base64,/, '');
+
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [
+                            { text: "Read this PDF document and extract the core content of the experiment. Focus on the Aim, Apparatus, Theory, and Procedure. Return the extracted text in a clean, readable format suitable for a lab manual." },
+                            {
+                                inline_data: {
+                                    mime_type: "application/pdf",
+                                    data: base64Data
+                                }
+                            }
+                        ]
+                    }]
+                })
+            }
+        );
+
+        if (!response.ok) {
+            const errText = await response.text();
+            throw new Error(`Gemini PDF error: ${response.status} - ${errText}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        return { success: true, text };
+    } catch (error) {
+        console.error('PDF Extraction Error:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
  * Generate diagram code from text description
  */
 export async function generateDiagram(description, format = 'mermaid') {
@@ -527,28 +638,28 @@ export async function generateDiagram(description, format = 'mermaid') {
     let formatPrompt = '';
 
     if (format === 'mermaid') {
-        formatPrompt = `OUTPUT FORMAT: MERMAID.JS
+        formatPrompt = `OUTPUT FORMAT: MERMAID FLOWCHART
 
-STRICT SYNTAX RULES:
-1. Start with diagram type: flowchart TD, flowchart LR, sequenceDiagram, classDiagram, etc.
-2. Every node needs an ID and label: A[Label] or B{Decision} or C((Circle))
-3. Arrows: --> or --- with optional text |like this|
-4. NO spaces in node IDs. Use camelCase or single letters.
-5. NO style commands. NO fillcolor. NO shape=. Keep it simple.
+CRITICAL SYNTAX RULES:
+1. Start with EXACTLY: flowchart TD
+2. NEVER use "digraph", "graph {", or "{ }" blocks.
+3. Node IDs: Simple IDs (A, B, C)
+4. Labels MUST be in double quotes if they contain special characters: A["Label (Text)"]
+5. Connections: A --> B
+6. FORBIDDEN: Do not use Rankdir, node [shape=box], or [label="..."] syntax.
 
-VALID EXAMPLE:
-flowchart LR
-    A[Battery 9V] --> B[Switch]
-    B --> C[Resistor 220Ω]
-    C --> D[LED]
-    D --> E[Ground]
+STYLISH COLOR CLASSES:
+classDef primary fill:#6366f1,stroke:#4338ca,color:#fff
+classDef secondary fill:#06b6d4,stroke:#0891b2,color:#fff
+classDef success fill:#10b981,stroke:#059669,color:#fff
+classDef warning fill:#f59e0b,stroke:#d97706,color:#fff
 
-SEQUENCE DIAGRAM EXAMPLE:
-sequenceDiagram
-    Client->>Server: Request
-    Server->>Database: Query
-    Database-->>Server: Results
-    Server-->>Client: Response`;
+EXAMPLE:
+flowchart TD
+    A["Start"] --> B["Process"]
+    B --> C["End"]
+    class A primary
+    class B,C secondary`;
     } else if (format === 'graphviz') {
         formatPrompt = `OUTPUT FORMAT: GRAPHVIZ DOT
 
@@ -635,23 +746,28 @@ Decision -> End: yes
 Decision -> Process: no`;
     }
 
-    const systemPrompt = `You are a diagram code generator. Generate ONLY valid ${format.toUpperCase()} code.
+    const systemPrompt = `You are a professional diagram code generator. Your task is to transform technical concepts, formulas, or processes into a VALID ${format.toUpperCase()} diagram.
 
 ${formatPrompt}
 
 CRITICAL RULES:
-1. Output ONLY the diagram code - no explanations, no markdown, no code blocks
-2. Use the EXACT format specified above
-3. Keep it simple and syntactically correct
-4. For circuits: show components in current flow order
+1. Output ONLY the diagram code - no explanations, no markdown (\`\`\`), no text preamble.
+2. Use ONLY the EXACT format specified above.
+3. If the user provides a formula or simple statement, represent it as nodes and arrows (e.g., A["Input"] --> B["Calculation"] --> C["Result"]).
+4. Keep it SIMPLE and syntactically correct.
+5. NEVER use the ampersand (&) symbol to combine nodes; use separate lines instead.
+6. NO semicolons (;) at the end of lines.
+7. Use classDef and class ONLY as shown in the EXAMPLE for colorful diagrams.
+8. Every line MUST be valid ${format} syntax.
+9. If you generate a flowchart, it MUST start with "flowchart TD" or "flowchart LR".
 
-User wants: ${description}
+User request: ${description}
 
-Generate the ${format} code now:`;
+Generate clean, valid, and COLORFUL ${format} code now:`;
 
     const result = await callAI(systemPrompt, '', {
-        temperature: 0.8,
-        maxTokens: 800  // REDUCED from 1500 for speed
+        temperature: 0.2, // Lower temperature for more consistent syntax
+        maxTokens: 800
     });
 
     if (!result.success) {
@@ -666,11 +782,81 @@ Generate the ${format} code now:`;
         .replace(/^The .*code.*:\n?/gim, '')
         .trim();
 
-    // Basic validation
-    if (format === 'mermaid' && !diagramCode.match(/^(flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|pie|gantt)/m)) {
-        // Try to fix by adding flowchart header
-        if (diagramCode.includes('-->') || diagramCode.includes('->')) {
-            diagramCode = 'flowchart TD\n    ' + diagramCode.split('\n').join('\n    ');
+    // Clean up common Mermaid syntax errors
+    if (format === 'mermaid') {
+        // DETECT AND FIX GRAPHVIZ HALLUCINATIONS
+        if (diagramCode.includes('digraph') || diagramCode.includes('rankdir')) {
+            console.log('⚠️ [AI] Detected Graphviz syntax in Mermaid request, attempting conversion...');
+
+            // Extract labels like A[label="Start"] -> A["Start"]
+            diagramCode = diagramCode.replace(/([A-Z0-9]+)\s*\[\s*label\s*=\s*"([^"]+)"\s*\]/gi, '$1["$2"]');
+
+            // Remove Graphviz headers
+            diagramCode = diagramCode.replace(/digraph\s+\w+\s*\{/gi, '');
+            diagramCode = diagramCode.replace(/graph\s*\[[^\]]+\]/gi, '');
+            diagramCode = diagramCode.replace(/node\s*\[[^\]]+\]/gi, '');
+            diagramCode = diagramCode.replace(/rankdir\s*=\s*\w+;?/gi, '');
+            diagramCode = diagramCode.replace(/[\{\}]/g, '');
+
+            // Change -> to -->
+            diagramCode = diagramCode.replace(/->/g, '-->');
+
+            // Add flowchart TD header if missing
+            if (!diagramCode.trim().startsWith('flowchart')) {
+                diagramCode = 'flowchart TD\n' + diagramCode;
+            }
+        }
+
+        // Remove semicolons at end of lines
+        diagramCode = diagramCode.replace(/;$/gm, '');
+
+        // Quote labels with special characters in [ ]
+        diagramCode = diagramCode.replace(/\[([^"\]]+[\/\(\)][^"\]]*)\]/g, '["$1"]');
+
+        // Fix & combinations (replace with separate lines)
+        const ampersandPattern = /^\s*([A-Za-z0-9]+(?:\s*&\s*[A-Za-z0-9]+)+)\s*(-->|---)\s*(.+)$/gm;
+        diagramCode = diagramCode.replace(ampersandPattern, (match, nodes, arrow, target) => {
+            const nodeList = nodes.split('&').map(n => n.trim());
+            return nodeList.map(node => `    ${node} ${arrow} ${target}`).join('\n');
+        });
+
+        // Ensure proper indentation
+        const lines = diagramCode.split('\n');
+        if (lines.length > 0 && lines[0].trim().startsWith('flowchart')) {
+            diagramCode = lines[0].trim() + '\n' +
+                lines.slice(1)
+                    .filter(l => l.trim())
+                    .map(l => l.trim().startsWith('class') || l.trim().startsWith('style') ? '    ' + l.trim() : '    ' + l.trim())
+                    .join('\n');
+        }
+    }
+
+    // Basic validation and fallback for Mermaid
+    if (format === 'mermaid') {
+        const hasMermaidHeader = diagramCode.match(/^(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|pie|gantt)/m);
+
+        if (!hasMermaidHeader) {
+            // If it's just text rows like "A = B", convert to nodes
+            const lines = diagramCode.split('\n')
+                .map(l => l.trim())
+                .filter(l => l.length > 0)
+                .map((l, i) => {
+                    if (l.includes('-->') || l.includes('->')) return l;
+                    // Otherwise wrap as a node
+                    return `Node${i}["${l.replace(/"/g, "'")}"]`;
+                });
+
+            // Connect nodes if they aren't connected
+            let connectedDiagram = '';
+            for (let i = 0; i < lines.length; i++) {
+                if (i < lines.length - 1 && !lines[i].includes('-->') && !lines[i + 1].includes('-->')) {
+                    connectedDiagram += `    ${lines[i]} --> ${lines[i + 1]}\n`;
+                } else {
+                    connectedDiagram += `    ${lines[i]}\n`;
+                }
+            }
+
+            diagramCode = 'flowchart TD\n' + connectedDiagram;
         }
     }
 
@@ -1001,6 +1187,7 @@ export default {
     generateQuiz,
     evaluateQuiz,
     extractTextFromImage,
+    extractTextFromPDF,
     generateDiagram,
     generateTestCases,
     streamCodeSuggestion,

@@ -1,8 +1,9 @@
 // AISLA - Experiment View Page (Student & Faculty)
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
+import mermaid from 'mermaid';
 import AIChatWidget from '../components/AIChatWidget';
 import './ExperimentView.css';
 
@@ -20,43 +21,139 @@ const ExperimentView = () => {
     const [quizLoading, setQuizLoading] = useState(false);
     const [quizHistory, setQuizHistory] = useState([]);
     const [showQuizPanel, setShowQuizPanel] = useState(false);
+    const [diagramLoading, setDiagramLoading] = useState(false);
+    const [diagramData, setDiagramData] = useState(null);
+    const [showDiagram, setShowDiagram] = useState(false);
+    const diagramRef = useRef(null);
 
     const isFaculty = user?.role === 'faculty' || user?.role === 'admin';
 
-    // Render markdown to HTML
+    // Initialize Mermaid with colorful theme
+    useEffect(() => {
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#6366f1',
+                primaryTextColor: '#ffffff',
+                primaryBorderColor: '#818cf8',
+                lineColor: '#06b6d4',
+                secondaryColor: '#10b981',
+                tertiaryColor: '#f59e0b',
+                background: '#1f2937',
+                mainBkg: '#1e293b',
+                secondBkg: '#334155',
+                textColor: '#ffffff',
+                border1: '#6366f1',
+                fontFamily: 'Inter, system-ui, sans-serif',
+                fontSize: '18px',
+                nodeBorder: '#818cf8',
+                clusterBkg: '#374151',
+                defaultLinkColor: '#06b6d4',
+                edgeLabelBackground: '#1f2937'
+            },
+            flowchart: {
+                useMaxWidth: true,
+                htmlLabels: true,
+                curve: 'basis',
+                padding: 15,
+                nodeSpacing: 60,
+                rankSpacing: 50,
+                diagramPadding: 10
+            },
+            securityLevel: 'loose'
+        });
+    }, [id]);
+
+    // Render markdown to HTML with table support
     const renderMarkdown = (text) => {
         if (!text) return '';
 
-        return text
-            // Headers
-            .replace(/^### (.*$)/gm, '<h4>$1</h4>')
-            .replace(/^## (.*$)/gm, '<h3>$1</h3>')
-            .replace(/^# (.*$)/gm, '<h2>$1</h2>')
-            // Bold
-            .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-            // Italic
-            .replace(/\*([^*]+)\*/g, '<em>$1</em>')
-            // Code blocks
-            .replace(/```([^`]+)```/gs, '<pre><code>$1</code></pre>')
-            // Inline code
-            .replace(/`([^`]+)`/g, '<code>$1</code>')
-            // Bullet lists
-            .replace(/^\* (.*$)/gm, '<li>$1</li>')
-            .replace(/^- (.*$)/gm, '<li>$1</li>')
-            // Numbered lists
-            .replace(/^\d+\. (.*$)/gm, '<li>$1</li>')
-            // Wrap consecutive <li> in <ul>
-            .replace(/(<li>.*<\/li>\n?)+/gs, '<ul>$&</ul>')
-            // Line breaks
-            .replace(/\n\n/g, '</p><p>')
-            .replace(/\n/g, '<br/>')
-            // Wrap in paragraph
-            .replace(/^(.+)$/s, '<p>$1</p>');
+        let html = text;
+
+        // First, normalize bullet characters - replace escaped unicode with actual bullets
+        html = html.replace(/u2022/g, '•');
+        html = html.replace(/u2099/g, '•');
+        html = html.replace(/\\u2022/g, '•');
+        
+        // Tables (must be done first)
+        html = html.replace(/\|(.+)\|\n\|[-: |]+\|\n((?:\|.+\|\n?)*)/g, (match, header, rows) => {
+            const headers = header.split('|').map(h => h.trim()).filter(Boolean);
+            const rowsData = rows.trim().split('\n').map(row => 
+                row.split('|').map(cell => cell.trim()).filter(Boolean)
+            );
+            
+            let table = '<table class="ai-table"><thead><tr>';
+            headers.forEach(h => { table += `<th>${h}</th>`; });
+            table += '</tr></thead><tbody>';
+            rowsData.forEach(row => {
+                table += '<tr>';
+                row.forEach(cell => { table += `<td>${cell}</td>`; });
+                table += '</tr>';
+            });
+            table += '</tbody></table>';
+            return table;
+        });
+
+        // Code blocks (before other processing)
+        html = html.replace(/```[a-z]*\n([^`]+)```/gs, '<pre><code>$1</code></pre>');
+        
+        // Headers
+        html = html.replace(/^### (.*$)/gm, '<h4>$1</h4>');
+        html = html.replace(/^## (.*$)/gm, '<h3>$1</h3>');
+        html = html.replace(/^# (.*$)/gm, '<h2>$1</h2>');
+        
+        // Bold
+        html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+        
+        // Inline code
+        html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+        
+        // Bullet lists - handle • symbol (unicode 2022) and regular * or -
+        html = html.replace(/^[•\*\-]\s*(.+)$/gm, '<li>$1</li>');
+        html = html.replace(/(<li>.*<\/li>(\n|<br\/>)?)+/gs, '<ul class="ai-list">$&</ul>');
+        
+        // Clean up extra line breaks inside lists
+        html = html.replace(/(<\/li>)<br\/>/g, '$1');
+        
+        // Line breaks
+        html = html.replace(/\n\n/g, '</p><p>');
+        html = html.replace(/\n/g, '<br/>');
+        
+        // Wrap in paragraph if not already wrapped
+        if (!html.startsWith('<')) {
+            html = '<p>' + html + '</p>';
+        }
+
+        return html;
     };
 
     useEffect(() => {
         fetchExperiment();
     }, [id]);
+
+    // Render Mermaid diagram when data changes
+    useEffect(() => {
+        if (diagramData && diagramRef.current) {
+            const renderDiagram = async () => {
+                try {
+                    // Clear previous content
+                    diagramRef.current.innerHTML = '';
+                    
+                    // Create a unique ID for this diagram
+                    const diagramId = `mermaid-${Date.now()}`;
+                    
+                    // Render the diagram
+                    const { svg } = await mermaid.render(diagramId, diagramData.code);
+                    diagramRef.current.innerHTML = svg;
+                } catch (error) {
+                    console.error('Mermaid render error:', error);
+                    diagramRef.current.innerHTML = `<p style="color: #ef4444;">Failed to render diagram. Please check the code syntax.</p>`;
+                }
+            };
+            renderDiagram();
+        }
+    }, [diagramData]);
 
     const fetchExperiment = async () => {
         try {
@@ -188,6 +285,72 @@ const ExperimentView = () => {
             alert(err.response?.data?.message || 'Failed to generate quiz');
         } finally {
             setQuizLoading(false);
+        }
+    };
+
+    const handleGenerateDiagram = async () => {
+        setDiagramLoading(true);
+        setShowDiagram(true);
+        setDiagramData(null);
+
+        try {
+            const token = localStorage.getItem('token');
+            const sectionContent = getSectionContent(activeSection);
+            const sectionLabel = sections.find(s => s.id === activeSection)?.label;
+
+            // Prepare description based on section content
+            let content = `${experiment?.title} - ${sectionLabel}\n\n`;
+            
+            if (Array.isArray(sectionContent)) {
+                content += sectionContent.join('\n');
+            } else {
+                content += sectionContent;
+            }
+
+            // Call diagram generation API
+            const res = await axios.post('/api/ai/diagram',
+                { 
+                    content: content.substring(0, 2000), // Limit length
+                    experimentTitle: `${experiment?.title} - ${sectionLabel}`
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (res.data.success) {
+                setDiagramData(res.data.diagram);
+            } else {
+                alert('Failed to generate diagram: ' + (res.data.error || 'Unknown error'));
+            }
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to generate diagram');
+        } finally {
+            setDiagramLoading(false);
+        }
+    };
+
+    const handleDownloadDiagram = () => {
+        if (!diagramRef.current) return;
+
+        const svgElement = diagramRef.current.querySelector('svg');
+        if (!svgElement) return;
+
+        try {
+            // Get SVG data
+            const svgData = new XMLSerializer().serializeToString(svgElement);
+            const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+            const url = URL.createObjectURL(svgBlob);
+
+            // Create download link
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `aisla-diagram-${activeSection}-${Date.now()}.svg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            console.error('Download failed:', err);
+            alert('Failed to download diagram');
         }
     };
 
@@ -448,27 +611,6 @@ const ExperimentView = () => {
                     </div>
                 </div>
                 <div className="header-actions">
-                    {/* Create Diagram Button */}
-                    <button
-                        className="btn btn-diagram"
-                        onClick={() => navigate('/diagram-generator', { 
-                            state: { 
-                                experimentTitle: experiment?.title,
-                                experimentContent: experiment?.content 
-                            }
-                        })}
-                        title="Generate diagram for this experiment"
-                    >
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="9" y1="3" x2="9" y2="21"/>
-                            <line x1="15" y1="3" x2="15" y2="21"/>
-                            <line x1="3" y1="9" x2="21" y2="9"/>
-                            <line x1="3" y1="15" x2="21" y2="15"/>
-                        </svg>
-                        Create Diagram
-                    </button>
-
                     {isFaculty && !experiment?.quizGenerated && (
                         <button
                             className="btn btn-secondary"
@@ -576,6 +718,19 @@ const ExperimentView = () => {
                                     </svg>
                                     Give Examples
                                 </button>
+                                <button
+                                    className="ai-btn diagram-btn"
+                                    onClick={handleGenerateDiagram}
+                                    disabled={diagramLoading}
+                                >
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                        <line x1="9" y1="9" x2="15" y2="9" />
+                                        <line x1="9" y1="15" x2="15" y2="15" />
+                                        <line x1="12" y1="9" x2="12" y2="15" />
+                                    </svg>
+                                    {diagramLoading ? 'Generating...' : 'Create Diagram'}
+                                </button>
                             </div>
                         </div>
 
@@ -603,6 +758,86 @@ const ExperimentView = () => {
                                             <div className="loader small"></div>
                                             <span>AI is starting...</span>
                                         </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Diagram Display */}
+                        {showDiagram && (
+                            <div className="diagram-response">
+                                <div className="diagram-response-header">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                                        <line x1="9" y1="9" x2="15" y2="9" />
+                                        <line x1="9" y1="15" x2="15" y2="15" />
+                                        <line x1="12" y1="9" x2="12" y2="15" />
+                                    </svg>
+                                    Generated Diagram
+                                    <button 
+                                        className="close-diagram"
+                                        onClick={() => setShowDiagram(false)}
+                                        title="Close diagram"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                                <div className="diagram-response-body">
+                                    {diagramLoading ? (
+                                        <div className="diagram-loading">
+                                            <div className="loader"></div>
+                                            <span>Generating diagram...</span>
+                                        </div>
+                                    ) : diagramData ? (
+                                        <div className="diagram-container-main">
+                                            <div className="diagram-actions-top">
+                                                <button className="diagram-action-btn" onClick={handleDownloadDiagram}>
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                                    </svg>
+                                                    Download SVG
+                                                </button>
+                                                <button 
+                                                    className="diagram-action-btn secondary"
+                                                    onClick={() => {
+                                                        navigator.clipboard.writeText(diagramData.code);
+                                                        alert('Code copied!');
+                                                    }}
+                                                >
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                                    </svg>
+                                                    Copy Code
+                                                </button>
+                                            </div>
+
+                                            {/* Visual Diagram Rendering */}
+                                            <div className="diagram-visual-compact">
+                                                <div 
+                                                    ref={diagramRef}
+                                                    className="mermaid-container compact"
+                                                />
+                                            </div>
+                                            
+                                            {/* Diagram Code (Collapsible) */}
+                                            <details className="diagram-code-details">
+                                                <summary className="code-summary">
+                                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="16 18 22 12 16 6"></polyline>
+                                                        <polyline points="8 6 2 12 8 18"></polyline>
+                                                    </svg>
+                                                    View Source Code
+                                                </summary>
+                                                <div className="diagram-code">
+                                                    <pre><code>{diagramData.code}</code></pre>
+                                                </div>
+                                            </details>
+                                        </div>
+                                    ) : (
+                                        <p className="diagram-error">Failed to generate diagram</p>
                                     )}
                                 </div>
                             </div>

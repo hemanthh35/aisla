@@ -259,4 +259,46 @@ router.post('/generate-test-cases', async (req, res) => {
     }
 });
 
+/**
+ * POST /api/ai/diagram
+ * Generate diagram from content
+ * 
+ * Body: { content: string, experimentTitle: string }
+ */
+router.post('/diagram', protect, async (req, res) => {
+    try {
+        const { content, experimentTitle } = req.body;
+
+        if (!content) {
+            return res.status(400).json({ message: 'Content is required' });
+        }
+
+        console.log(`📊 [API] Diagram generation request for: ${experimentTitle || 'Untitled'}`);
+
+        const result = await aiService.generateDiagram(content, 'mermaid');
+
+        if (!result.success) {
+            return res.status(500).json({
+                success: false,
+                message: 'Diagram generation failed',
+                error: result.error
+            });
+        }
+
+        res.json({
+            success: true,
+            diagram: {
+                code: result.code,
+                type: result.format
+            }
+        });
+    } catch (error) {
+        console.error('Diagram Generation Error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: error.message 
+        });
+    }
+});
+
 export default router;

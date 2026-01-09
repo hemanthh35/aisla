@@ -240,6 +240,46 @@
     cursor: not-allowed;
 }
 
+.button-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.clear-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.8125rem 1.5rem;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--neutral-300);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-btn svg {
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+}
+
+.clear-btn:hover:not(:disabled) {
+    color: var(--neutral-100);
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.clear-btn:hover svg {
+    opacity: 1;
+    stroke: #ef4444;
+}
+
 .spinner {
     width: 18px;
     height: 18px;

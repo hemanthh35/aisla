@@ -1,13 +1,15 @@
-// AISLA - Create Experiment Page with Real-Time Progress
-import React, { useState, useContext } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+// AISLA - Create/Edit Experiment Page with Real-Time Progress
+import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import axios from 'axios';
 import './CreateExperiment.css';
 
 const CreateExperiment = () => {
     const { user } = useContext(AuthContext);
+    const { id } = useParams();
     const navigate = useNavigate();
+    const isEditing = !!id;
 
     // Mode selection: 'quick' = just topic name, 'detailed' = full content
     const [mode, setMode] = useState('quick');
@@ -20,8 +22,10 @@ const CreateExperiment = () => {
         difficulty: 'intermediate'
     });
     const [loading, setLoading] = useState(false);
+    const [fetching, setFetching] = useState(isEditing);
     const [error, setError] = useState('');
     const [step, setStep] = useState(1);
+    const [showOptions, setShowOptions] = useState(false);
 
     // Progress state for streaming
     const [progress, setProgress] = useState({
@@ -29,6 +33,64 @@ const CreateExperiment = () => {
         elapsed: 0,
         message: ''
     });
+
+    useEffect(() => {
+        if (isEditing) {
+            fetchExperiment();
+        }
+    }, [id]);
+
+    const fetchExperiment = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`/api/experiments/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const exp = res.data.experiment;
+            setFormData({
+                title: exp.title,
+                content: exp.originalContent?.text || exp.rawContent || '',
+                contentType: 'text',
+                subject: exp.subject || '',
+                difficulty: exp.difficulty || 'intermediate',
+                structuredContent: exp.content || {}
+            });
+            setMode('detailed');
+        } catch (err) {
+            console.error('Error fetching experiment:', err);
+            setError('Failed to fetch experiment for editing');
+        } finally {
+            setFetching(false);
+        }
+    };
+
+    const handleUpdate = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            // Only send fields that were actually modified if possible, 
+            // but for now we'll send the ones available in formData
+            const updateData = {
+                title: formData.title,
+                subject: formData.subject,
+                difficulty: formData.difficulty,
+                rawContent: formData.content,
+                content: formData.structuredContent
+            };
+
+            const res = await axios.put(`/api/experiment/${id}`, updateData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (res.data.success) {
+                navigate(`/experiment/${id}`);
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to update experiment');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Check if user is faculty
     if (user?.role !== 'faculty' && user?.role !== 'admin') {
@@ -42,6 +104,54 @@ const CreateExperiment = () => {
             </div>
         );
     }
+
+    const handlePDFUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (file.type !== 'application/pdf') {
+            setError('Please upload a PDF document');
+            return;
+        }
+
+        setLoading(true);
+        setError('');
+        setProgress({ status: 'extracting', message: '📄 AI is parsing PDF document...' });
+
+        try {
+            const base64 = await convertToBase64(file);
+            const token = localStorage.getItem('token');
+            const response = await axios.post('/api/experiment/extract-pdf', {
+                pdfBase64: base64
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                setFormData(prev => ({
+                    ...prev,
+                    content: response.data.text
+                }));
+                setProgress({ status: '', message: '' });
+            }
+        } catch (err) {
+            console.error('PDF Upload Error:', err);
+            setError(err.response?.data?.message || 'Failed to extract text from PDF');
+            setProgress({ status: '', message: '' });
+        } finally {
+            setLoading(false);
+            e.target.value = null; // Reset input
+        }
+    };
+
+    const convertToBase64 = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = (error) => reject(error);
+        });
+    };
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -88,8 +198,10 @@ const CreateExperiment = () => {
 
     // Streaming submit with real-time progress
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
+        if (isEditing) {
+            handleUpdate();
+            return;
+        }
 
         if (!formData.title.trim()) {
             setError('Please enter an experiment title/topic');
@@ -217,7 +329,7 @@ const CreateExperiment = () => {
                         <path d="M19 12H5M12 19l-7-7 7-7" />
                     </svg>
                 </Link>
-                <h1 className="create-title">Create New Experiment</h1>
+                <h1 className="create-title">{isEditing ? 'Edit Experiment' : 'Create New Experiment'}</h1>
             </header>
 
             {/* Mode Toggle */}
@@ -254,27 +366,15 @@ const CreateExperiment = () => {
                 </p>
             </div>
 
-            {/* Progress Steps - Different for each mode */}
-            <div className="progress-steps">
-                <div className={`progress-step ${step >= 1 ? 'active' : ''}`}>
-                    <div className="step-number">1</div>
-                    <span>{mode === 'quick' ? 'Topic' : 'Basic Info'}</span>
+            {/* Minimal Progress Bar at the top instead of steps */}
+            {loading && (
+                <div className="minimal-progress-bar">
+                    <div
+                        className="minimal-progress-fill"
+                        style={{ width: `${Math.min((progress.elapsed / 90) * 100, 95)}%` }}
+                    ></div>
                 </div>
-                <div className="progress-line"></div>
-                {mode === 'detailed' && (
-                    <>
-                        <div className={`progress-step ${step >= 2 ? 'active' : ''}`}>
-                            <div className="step-number">2</div>
-                            <span>Content</span>
-                        </div>
-                        <div className="progress-line"></div>
-                    </>
-                )}
-                <div className={`progress-step ${step >= (mode === 'quick' ? 2 : 3) ? 'active' : ''}`}>
-                    <div className="step-number">{mode === 'quick' ? '2' : '3'}</div>
-                    <span>Generate</span>
-                </div>
-            </div>
+            )}
 
             {/* Form Card */}
             <div className="create-form-card">
@@ -293,92 +393,71 @@ const CreateExperiment = () => {
                     {/* QUICK MODE - Step 1: Topic & Settings */}
                     {mode === 'quick' && step === 1 && (
                         <div className="form-step">
-                            <h2 className="step-title">
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '28px', height: '28px', marginRight: '10px', color: '#00d4ff' }}>
-                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                                </svg>
-                                Quick Generate from Topic
-                            </h2>
-                            <p className="step-description">
-                                Just enter an experiment topic — AI will generate everything automatically!
-                            </p>
-
                             <div className="form-group">
-                                <label htmlFor="title">Experiment Topic *</label>
+                                <label htmlFor="title" style={{ textAlign: 'center', fontSize: '1.1rem', marginBottom: '1.25rem', fontWeight: '600', color: '#e4e4e7' }}>What would you like to create today?</label>
                                 <input
                                     type="text"
                                     id="title"
                                     name="title"
                                     value={formData.title}
                                     onChange={handleChange}
-                                    placeholder="e.g., Ohm's Law, Newton's Laws of Motion, Titration of Acids and Bases"
+                                    placeholder="Enter any science or coding topic..."
                                     className="form-input form-input-large"
                                     autoFocus
+                                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), setStep(2))}
                                 />
-                                <span className="input-hint">Enter any science topic and AI will create a complete experiment</span>
                             </div>
 
-                            <div className="form-row">
-                                <div className="form-group">
-                                    <label htmlFor="subject">Subject</label>
-                                    <select
-                                        id="subject"
-                                        name="subject"
-                                        value={formData.subject}
-                                        onChange={handleChange}
-                                        className="form-select"
-                                    >
-                                        <option value="">Auto-detect</option>
-                                        <option value="Physics">Physics</option>
-                                        <option value="Chemistry">Chemistry</option>
-                                        <option value="Electronics">Electronics</option>
-                                        <option value="Computer Science">Computer Science</option>
-                                        <option value="Biology">Biology</option>
-                                        <option value="Mathematics">Mathematics</option>
-                                        <option value="Other">Other</option>
-                                    </select>
-                                </div>
-
-                                <div className="form-group">
-                                    <label htmlFor="difficulty">Difficulty Level</label>
-                                    <select
-                                        id="difficulty"
-                                        name="difficulty"
-                                        value={formData.difficulty}
-                                        onChange={handleChange}
-                                        className="form-select"
-                                    >
-                                        <option value="beginner">Beginner</option>
-                                        <option value="intermediate">Intermediate</option>
-                                        <option value="advanced">Advanced</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="ai-feature-box">
-                                <div className="ai-feature-icon">
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                                        <circle cx="12" cy="12" r="3" />
-                                        <path d="M12 2v2M12 20v2M20 12h2M2 12h-2M17.66 17.66l1.41 1.41M4.93 4.93l1.41 1.41M17.66 6.34l1.41-1.41M4.93 19.07l1.41-1.41" />
+                            <div className="minimal-options-toggle">
+                                <button
+                                    type="button"
+                                    className="text-btn-small"
+                                    onClick={() => setShowOptions(!showOptions)}
+                                >
+                                    {showOptions ? 'Hide Options' : 'Show Options'}
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ transform: showOptions ? 'rotate(180deg)' : 'none' }}>
+                                        <polyline points="6 9 12 15 18 9" />
                                     </svg>
-                                </div>
-                                <div className="ai-feature-content">
-                                    <h4>AI Will Generate:</h4>
-                                    <ul>
-                                        <li>Complete theory & background</li>
-                                        <li>Step-by-step procedure</li>
-                                        <li>Required apparatus list</li>
-                                        <li>Key formulas & examples</li>
-                                        <li>Observations & results</li>
-                                        <li>Precautions & real-world applications</li>
-                                    </ul>
-                                </div>
+                                </button>
                             </div>
 
-                            <div className="step-actions">
+                            {showOptions && (
+                                <div className="form-row minimal-options-row">
+                                    <div className="form-group">
+                                        <select
+                                            id="subject"
+                                            name="subject"
+                                            value={formData.subject}
+                                            onChange={handleChange}
+                                            className="form-select-minimal"
+                                        >
+                                            <option value="Physics">Physics</option>
+                                            <option value="Chemistry">Chemistry</option>
+                                            <option value="Computer Science">Coding / IT</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="form-group">
+                                        <select
+                                            id="difficulty"
+                                            name="difficulty"
+                                            value={formData.difficulty}
+                                            onChange={handleChange}
+                                            className="form-select-minimal"
+                                        >
+                                            <option value="beginner">Beginner</option>
+                                            <option value="intermediate">Intermediate</option>
+                                            <option value="advanced">Advanced</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="step-actions center">
                                 <button
                                     type="button"
                                     className="btn btn-primary btn-large"
+                                    style={{ width: '100%', fontSize: '1.1rem', padding: '1.25rem' }}
                                     onClick={() => {
                                         if (!formData.title.trim()) {
                                             setError('Please enter an experiment topic');
@@ -387,8 +466,8 @@ const CreateExperiment = () => {
                                         setStep(2);
                                     }}
                                 >
-                                    Continue to Generate
-                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                    <span>Continue to Preview</span>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ width: '20px', height: '20px' }}>
                                         <path d="M5 12h14M12 5l7 7-7 7" />
                                     </svg>
                                 </button>
@@ -521,14 +600,9 @@ const CreateExperiment = () => {
                                         onChange={handleChange}
                                         className="form-select"
                                     >
-                                        <option value="">Select Subject</option>
                                         <option value="Physics">Physics</option>
                                         <option value="Chemistry">Chemistry</option>
-                                        <option value="Electronics">Electronics</option>
-                                        <option value="Computer Science">Computer Science</option>
-                                        <option value="Biology">Biology</option>
-                                        <option value="Mathematics">Mathematics</option>
-                                        <option value="Other">Other</option>
+                                        <option value="Computer Science">Coding / IT</option>
                                     </select>
                                 </div>
 
@@ -550,17 +624,17 @@ const CreateExperiment = () => {
 
                             <div className="step-actions">
                                 <button
-                                    type="button"
+                                    type={isEditing ? 'submit' : 'button'}
                                     className="btn btn-primary"
                                     onClick={() => {
                                         if (!formData.title.trim()) {
                                             setError('Please enter an experiment title');
                                             return;
                                         }
-                                        setStep(2);
+                                        if (!isEditing) setStep(2);
                                     }}
                                 >
-                                    Continue
+                                    {isEditing ? 'Save Changes' : 'Continue'}
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M5 12h14M12 5l7 7-7 7" />
                                     </svg>
@@ -592,8 +666,26 @@ const CreateExperiment = () => {
                                             <circle cx="8.5" cy="8.5" r="1.5" />
                                             <polyline points="21 15 16 10 5 21" />
                                         </svg>
-                                        <span>Upload Image</span>
-                                        <small>OCR will extract text</small>
+                                        <span>Image</span>
+                                        <small>OCR Extract</small>
+                                    </div>
+                                </label>
+
+                                <label className="upload-option">
+                                    <input
+                                        type="file"
+                                        accept="application/pdf"
+                                        onChange={handlePDFUpload}
+                                        disabled={loading}
+                                    />
+                                    <div className="upload-option-content">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ color: '#ef4444' }}>
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                            <path d="M16 13H8M16 17H8M10 9H8" />
+                                        </svg>
+                                        <span>PDF Doc</span>
+                                        <small>AI Parse</small>
                                     </div>
                                 </label>
                             </div>
@@ -607,10 +699,38 @@ const CreateExperiment = () => {
                                     onChange={handleChange}
                                     placeholder="Enter or paste the experiment details here. Include information about the aim, theory, procedure, formulas, etc. The AI will structure this into a complete experiment module."
                                     className="form-textarea"
-                                    rows={12}
+                                    rows={8}
                                 />
                                 <span className="char-count">{formData.content.length} characters</span>
                             </div>
+
+                            {isEditing && formData.structuredContent && (
+                                <div className="structured-editor">
+                                    <h3 className="section-subtitle">Experiment Module Sections</h3>
+                                    <p className="step-description">Refine the AI-generated sections for this experiment.</p>
+
+                                    {['aim', 'apparatus', 'theory', 'procedure', 'observations', 'results', 'precautions'].map(field => (
+                                        <div className="form-group" key={field}>
+                                            <label htmlFor={`field-${field}`}>{field.charAt(0).toUpperCase() + field.slice(1)}</label>
+                                            <textarea
+                                                id={`field-${field}`}
+                                                value={formData.structuredContent[field] || ''}
+                                                onChange={(e) => {
+                                                    setFormData({
+                                                        ...formData,
+                                                        structuredContent: {
+                                                            ...formData.structuredContent,
+                                                            [field]: e.target.value
+                                                        }
+                                                    });
+                                                }}
+                                                className="form-textarea-small"
+                                                rows={4}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
 
                             <div className="step-actions">
                                 <button
@@ -621,18 +741,11 @@ const CreateExperiment = () => {
                                     Back
                                 </button>
                                 <button
-                                    type="button"
+                                    type="submit"
                                     className="btn btn-primary"
-                                    onClick={() => {
-                                        if (!formData.content.trim() || formData.content.length < 50) {
-                                            setError('Please provide more detailed content (at least 50 characters)');
-                                            return;
-                                        }
-                                        setStep(3);
-                                    }}
                                     disabled={loading}
                                 >
-                                    Continue
+                                    {isEditing ? 'Save Changes' : 'Continue'}
                                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                         <path d="M5 12h14M12 5l7 7-7 7" />
                                     </svg>

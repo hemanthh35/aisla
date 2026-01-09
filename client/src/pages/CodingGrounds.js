@@ -272,11 +272,11 @@ const CodingGrounds = () => {
             clearTimeout(debounceRef.current);
         }
 
-        // Debounce AI calls (wait 1.5 seconds after user stops typing)
+        // Debounce AI calls (wait 2 seconds after user stops typing)
         if (aiEnabled && problemStatement.trim()) {
             debounceRef.current = setTimeout(() => {
                 fetchSuggestion(newCode);
-            }, 1500);
+            }, 2000);
         }
     };
 

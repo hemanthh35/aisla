@@ -31,9 +31,10 @@ export const SocketProvider = ({ children }) => {
       const newSocket = io(socketUrl, {
         auth: { token },
         transports: ["websocket", "polling"],
-        reconnectionAttempts: 10,
-        reconnectionDelay: 1000,
-        timeout: 20000,
+        reconnectionAttempts: 5,
+        reconnectionDelay: 2000,
+        timeout: 10000,
+        autoConnect: false, // Don't auto-connect
       });
 
       newSocket.on("connect", () => {
@@ -47,7 +48,8 @@ export const SocketProvider = ({ children }) => {
       });
 
       newSocket.on("connect_error", (error) => {
-        console.error("Socket connection error:", error.message);
+        // Silently handle connection errors - socket is optional
+        console.log("ℹ️ Socket unavailable (Faculty chat may not work)");
         setIsConnected(false);
       });
 
@@ -77,8 +79,15 @@ export const SocketProvider = ({ children }) => {
 
       setSocket(newSocket);
 
-      // Request online users list
-      newSocket.emit("users:get_online");
+      // Only connect if user navigates to faculty chat
+      // Socket is not needed for AI chat widget
+      const shouldConnect = window.location.pathname.includes('/faculty-chat');
+      
+      if (shouldConnect) {
+        newSocket.connect();
+        // Request online users list
+        newSocket.emit("users:get_online");
+      }
 
       return () => {
         newSocket.disconnect();
@@ -179,6 +188,21 @@ export const SocketProvider = ({ children }) => {
     [onlineUsers]
   );
 
+  // Connect socket manually (for faculty chat page)
+  const connectSocket = useCallback(() => {
+    if (socket && !isConnected) {
+      socket.connect();
+      socket.emit("users:get_online");
+    }
+  }, [socket, isConnected]);
+
+  // Disconnect socket manually
+  const disconnectSocket = useCallback(() => {
+    if (socket && isConnected) {
+      socket.disconnect();
+    }
+  }, [socket, isConnected]);
+
   const value = {
     socket,
     isConnected,
@@ -194,6 +218,8 @@ export const SocketProvider = ({ children }) => {
     updateRoomStatus,
     clearNotification,
     isUserOnline,
+    connectSocket,
+    disconnectSocket,
   };
 
   return (

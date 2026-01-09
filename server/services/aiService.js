@@ -331,18 +331,102 @@ Keep examples brief and clear.`
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.flushHeaders();
 
-        // Send start event
+        const userPrompt = prompts[intent] || prompts.simple;
+        const systemPrompt = systemPrompts[intent] || systemPrompts.simple;
+
+        // 1. Try Gemini Streaming (FAST CLOUD)
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (apiKey) {
+            try {
+                console.log(`🚀 [AI] Using Gemini Streaming for Explanation...`);
+                sendSSE({ type: 'START', model: GEMINI_MODEL });
+
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+                            }],
+                            generationConfig: {
+                                temperature: 0.7,
+                                maxOutputTokens: 500
+                            }
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Gemini stream error: ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let tokenCount = 0;
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+
+                    let openBrace = buffer.indexOf('{');
+                    while (openBrace !== -1) {
+                        let nesting = 0;
+                        let closeBrace = -1;
+                        for (let i = openBrace; i < buffer.length; i++) {
+                            if (buffer[i] === '{') nesting++;
+                            else if (buffer[i] === '}') nesting--;
+
+                            if (nesting === 0) {
+                                closeBrace = i;
+                                break;
+                            }
+                        }
+
+                        if (closeBrace !== -1) {
+                            const jsonStr = buffer.substring(openBrace, closeBrace + 1);
+                            try {
+                                const data = JSON.parse(jsonStr);
+                                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                                if (text) {
+                                    tokenCount++;
+                                    sendSSE({ type: 'TOKEN', content: text });
+                                }
+                            } catch (e) { }
+                            buffer = buffer.substring(closeBrace + 1);
+                            openBrace = buffer.indexOf('{');
+                        } else {
+                            break;
+                        }
+                    }
+                }
+
+                sendSSE({ type: 'DONE', tokens: tokenCount });
+                res.end();
+                console.log(`✅ [AI] Gemini streamed ${tokenCount} chunks`);
+                return;
+
+            } catch (geminiError) {
+                console.error('⚠️ [AI] Gemini streaming failed, falling back to local model:', geminiError.message);
+            }
+        }
+
+        // 2. Fallback to Ollama
+        console.log(`🔧 [AI] Using Ollama (Local) for Explanation...`);
         sendSSE({ type: 'START', model: TEXT_MODEL });
 
-        // Use /api/chat for streaming (same as chat service)
         const ollamaResponse = await fetch(`${OLLAMA_URL}/api/chat`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 model: TEXT_MODEL,
                 messages: [
-                    { role: 'system', content: systemPrompts[intent] || systemPrompts.simple },
-                    { role: 'user', content: `${prompts[intent] || prompts.simple}\n\n${content}` }
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: `${userPrompt}\n\n${content}` }
                 ],
                 stream: true,
                 options: {
@@ -373,18 +457,12 @@ Keep examples brief and clear.`
             for (const line of lines) {
                 try {
                     const data = JSON.parse(line);
-
-                    // Extract token from chat response
                     if (data.message?.content) {
                         const token = data.message.content;
                         fullText += token;
                         tokenCount++;
-
-                        // Send token immediately
                         sendSSE({ type: 'TOKEN', content: token });
                     }
-
-                    // Check if complete
                     if (data.done === true) {
                         sendSSE({ type: 'DONE', tokens: tokenCount });
                     }
@@ -439,17 +517,45 @@ Return valid JSON only.`;
 
     const questions = parseJSON(result.text);
 
-    if (!questions || !Array.isArray(questions)) {
-        // Quick fallback
+    if (!questions || !Array.isArray(questions) || questions.length < 3) {
+        // Robust fallback with 5 basic questions
         return {
             success: true,
             questions: [
                 {
                     type: 'mcq',
-                    question: `What is the main objective of ${experiment.title}?`,
-                    options: ['To understand the concept', 'To skip practice', 'To avoid experiments', 'None'],
-                    answer: 'To understand the concept',
-                    explanation: 'Understanding is the primary goal of any experiment.'
+                    question: `What is the primary focus of this experiment on ${experiment.title}?`,
+                    options: ['To analyze the underlying theoretical concepts', 'To demonstrate practical applications', 'Both A and B', 'None of the above'],
+                    answer: 'Both A and B',
+                    explanation: 'Experiments typically aim to connect theory with practice.'
+                },
+                {
+                    type: 'mcq',
+                    question: `Which safety precaution is most important for ${experiment.title}?`,
+                    options: ['Wearing appropriate protective gear', 'Working quickly to finish sooner', 'Ignoring instructions', 'Eating in the lab'],
+                    answer: 'Wearing appropriate protective gear',
+                    explanation: 'Safety is always the top priority in any experimental setting.'
+                },
+                {
+                    type: 'mcq',
+                    question: `What kind of data is primarily collected in this experiment?`,
+                    options: ['Quantitative measurements', 'Qualitative observations', 'Both quantitative and qualitative', 'Random interactions'],
+                    answer: 'Both quantitative and qualitative',
+                    explanation: 'Most experiments involve recording both numerical data and observational notes.'
+                },
+                {
+                    type: 'mcq',
+                    question: `Why is accuracy important in ${experiment.title}?`,
+                    options: ['To ensure reproducible results', 'To look professional', 'It is not important', 'To waste time'],
+                    answer: 'To ensure reproducible results',
+                    explanation: 'Accuracy allows others to verify and reproduce your scientific findings.'
+                },
+                {
+                    type: 'mcq',
+                    question: `What is a common source of error in this type of experiment?`,
+                    options: ['Instrumental limitations', 'Perfect conditions', 'Theory being wrong', 'All of the above'],
+                    answer: 'Instrumental limitations',
+                    explanation: 'Real-world equipment always has some degree of uncertainty or limitation.'
                 }
             ]
         };
@@ -923,12 +1029,11 @@ Return ONLY the JSON array, no explanations.`;
 export async function streamCodeSuggestion(res, problemStatement, code, language = 'python') {
     console.log(`💡 [AI] Streaming code suggestion for ${language}`);
 
-    const systemPrompt = `You are a helpful coding tutor. Provide hints and guidance WITHOUT giving direct code answers.
-- Point out logical issues or edge cases
-- Suggest algorithmic approaches
-- Ask guiding questions
-- Encourage the student to think through the problem
-Do NOT write the solution code for them.`;
+    const systemPrompt = `You are a fast, concise coding mentor.
+1. **STRICTLY NO DIRECT ANSWERS**: Never write the corrected code for the student.
+2. **HINTS ONLY**: If the code is incorrect, provide a short, specific hint or ask a guiding question (max 2 sentences).
+3. **FOCUS**: Point out the logic error or syntax issue without fixing it for them.
+4. **SUCCESS**: If the code is correct, simply say "Good job! Your code looks correct."`;
 
     const userPrompt = `Problem: ${problemStatement}
 
@@ -937,7 +1042,7 @@ Student's current code (${language}):
 ${code}
 \`\`\`
 
-Provide helpful hints and suggestions to guide them toward the solution.`;
+Provide short, helpful hints or a "Good job" message.`;
 
     // Helper to send SSE
     const sendSSE = (data) => {
@@ -952,6 +1057,96 @@ Provide helpful hints and suggestions to guide them toward the solution.`;
         res.setHeader('X-Accel-Buffering', 'no');
         res.flushHeaders();
 
+        // 1. Try Gemini Streaming (FAST CLOUD)
+        const apiKey = process.env.GEMINI_API_KEY;
+        if (apiKey) {
+            try {
+                console.log(`🚀 [AI] Using Gemini Streaming for Code Suggestions...`);
+                // Send START event
+                sendSSE({ type: 'START', model: GEMINI_MODEL });
+
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{ text: `${systemPrompt}\n\n${userPrompt}` }]
+                            }],
+                            generationConfig: {
+                                temperature: 0.7,
+                                maxOutputTokens: 500 // Keep it short
+                            }
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    throw new Error(`Gemini stream error: ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let tokenCount = 0;
+                let buffer = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    buffer += decoder.decode(value, { stream: true });
+
+                    // Manual JSON parsing for stream
+                    let openBrace = buffer.indexOf('{');
+                    while (openBrace !== -1) {
+                        // Simple heuristic for JSON objects in stream
+                        // We look for the closing brace that balances it
+                        let nesting = 0;
+                        let closeBrace = -1;
+                        for (let i = openBrace; i < buffer.length; i++) {
+                            if (buffer[i] === '{') nesting++;
+                            else if (buffer[i] === '}') nesting--;
+
+                            if (nesting === 0) {
+                                closeBrace = i;
+                                break;
+                            }
+                        }
+
+                        if (closeBrace !== -1) {
+                            const jsonStr = buffer.substring(openBrace, closeBrace + 1);
+                            try {
+                                const data = JSON.parse(jsonStr);
+                                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+                                if (text) {
+                                    tokenCount++;
+                                    sendSSE({ type: 'TOKEN', content: text });
+                                }
+                            } catch (e) {
+                                // Ignore
+                            }
+                            buffer = buffer.substring(closeBrace + 1);
+                            openBrace = buffer.indexOf('{');
+                        } else {
+                            break; // Wait for more data
+                        }
+                    }
+                }
+
+                sendSSE({ type: 'DONE', tokens: tokenCount });
+                res.end();
+                console.log(`✅ [AI] Gemini streamed ${tokenCount} chunks`);
+                return;
+
+            } catch (geminiError) {
+                console.error('⚠️ [AI] Gemini streaming failed, falling back to local model:', geminiError.message);
+                // Fallback to next method
+            }
+        }
+
+        // 2. Fallback to Ollama
+        console.log(`🔧 [AI] Using Ollama (Local) for Code Suggestions...`);
         sendSSE({ type: 'START', model: TEXT_MODEL });
 
         const ollamaResponse = await fetch(`${OLLAMA_URL}/api/chat`, {
@@ -964,7 +1159,7 @@ Provide helpful hints and suggestions to guide them toward the solution.`;
                     { role: 'user', content: userPrompt }
                 ],
                 stream: true,
-                options: { temperature: 0.7, num_predict: 1000 }
+                options: { temperature: 0.7, num_predict: 500 }
             })
         });
 
@@ -1000,8 +1195,10 @@ Provide helpful hints and suggestions to guide them toward the solution.`;
         }
 
         res.end();
+        console.log(`✅ [AI] Ollama streamed ${tokenCount} tokens`);
+
     } catch (error) {
-        console.error('Stream code suggestion error:', error);
+        console.error('Code suggestion stream error:', error);
         res.write(`data: ${JSON.stringify({ type: 'ERROR', error: error.message })}\n\n`);
         res.end();
     }

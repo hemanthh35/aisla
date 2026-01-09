@@ -6,13 +6,16 @@ dotenv.config();
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import http from 'http';
 import { fileURLToPath } from 'url';
 import connectDB from './config/db.js';
+import { initializeSocket } from './services/socketService.js';
 import authRoutes from './routes/authRoutes.js';
 import experimentRoutes from './routes/experimentRoutes.js';
 import quizRoutes from './routes/quizRoutes.js';
 import badgeRoutes from './routes/badgeRoutes.js';
 import chatRoutes from './routes/chat.js';
+import facultyChatRoutes from './routes/facultyChatRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
 import reactionRoutes from './routes/reactionRoutes.js';
@@ -26,6 +29,15 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
+// Create HTTP server for Socket.IO
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = initializeSocket(server);
+
+// Make io accessible to routes
+app.set('io', io);
+
 // Middleware
 app.use(cors()); // Enable CORS for frontend requests
 app.use(express.json({ limit: '50mb' })); // Parse JSON request bodies with larger limit for images
@@ -38,6 +50,7 @@ app.use('/api/experiments', experimentRoutes); // Alias for getting all
 app.use('/api/quiz', quizRoutes);
 app.use('/api/badges', badgeRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/faculty-chat', facultyChatRoutes); // Faculty-Student Chat System
 app.use('/api/ai', aiRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/reactions', reactionRoutes);
@@ -68,6 +81,7 @@ if (process.env.NODE_ENV === 'production') {
         ai: '/api/ai',
         badges: '/api/badges',
         chat: '/api/chat',
+        facultyChat: '/api/faculty-chat',
         admin: '/api/admin'
       }
     });
@@ -84,10 +98,11 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 // Start server on all interfaces (0.0.0.0) for network access
-app.listen(PORT, '0.0.0.0', () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`✅ Server running on port ${PORT}`);
   console.log(`🌐 Access at: http://localhost:${PORT}`);
   console.log(`🌍 Network Access: http://0.0.0.0:${PORT}`);
+  console.log(`💬 Socket.IO enabled for real-time chat`);
 
   // Connect to MongoDB after server starts
   connectDB();

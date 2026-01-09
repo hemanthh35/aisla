@@ -228,6 +228,20 @@
     background: rgba(249, 115, 22, 0.1);
 }
 
+.lab-card.red .lab-icon-wrapper {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+}
+
+.lab-card.red:hover {
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.lab-card.red .lab-action {
+    color: #f87171;
+    background: rgba(239, 68, 68, 0.1);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .labs-header {

@@ -2,6 +2,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import Landing from './pages/Landing';
 import Register from './pages/Register';
 import Login from './pages/Login';
@@ -9,6 +10,7 @@ import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import FacultyDashboard from './pages/FacultyDashboard';
+import FacultyChat from './pages/FacultyChat';
 import CreateExperiment from './pages/CreateExperiment';
 import ExperimentView from './pages/ExperimentView';
 import QuizPage from './pages/QuizPage';
@@ -28,196 +30,216 @@ import './App.css';
 function App() {
   return (
     <AuthProvider>
-      <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-        <div className="App">
-          <Routes>
-            {/* Landing page as home */}
-            <Route path="/" element={<Landing />} />
+      <SocketProvider>
+        <Router future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <div className="App">
+            <Routes>
+              {/* Landing page as home */}
+              <Route path="/" element={<Landing />} />
 
-            {/* Public routes */}
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
+              {/* Public routes */}
+              <Route path="/register" element={<Register />} />
+              <Route path="/login" element={<Login />} />
 
-            {/* Protected routes */}
-            <Route
-              path="/dashboard"
-              element={
-                <PrivateRoute>
-                  <Dashboard />
-                </PrivateRoute>
-              }
-            />
+              {/* Protected routes */}
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute>
+                    <Dashboard />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Admin Dashboard */}
-            <Route
-              path="/admin-dashboard"
-              element={
-                <PrivateRoute>
-                  <AdminDashboard />
-                </PrivateRoute>
-              }
-            />
+              {/* Admin Dashboard */}
+              <Route
+                path="/admin-dashboard"
+                element={
+                  <PrivateRoute>
+                    <AdminDashboard />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Student Dashboard */}
-            <Route
-              path="/student-dashboard"
-              element={
-                <PrivateRoute>
-                  <StudentDashboard />
-                </PrivateRoute>
-              }
-            />
+              {/* Student Dashboard */}
+              <Route
+                path="/student-dashboard"
+                element={
+                  <PrivateRoute>
+                    <StudentDashboard />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Faculty Dashboard */}
-            <Route
-              path="/faculty-dashboard"
-              element={
-                <PrivateRoute>
-                  <FacultyDashboard />
-                </PrivateRoute>
-              }
-            />
+              {/* Faculty Dashboard */}
+              <Route
+                path="/faculty-dashboard"
+                element={
+                  <PrivateRoute>
+                    <FacultyDashboard />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Labs Hub */}
-            <Route
-              path="/labs"
-              element={
-                <PrivateRoute>
-                  <LabsHub />
-                </PrivateRoute>
-              }
-            />
+              {/* Faculty Chat - Real-time messaging */}
+              <Route
+                path="/faculty-chat"
+                element={
+                  <PrivateRoute>
+                    <FacultyChat />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/faculty-chat/:roomId"
+                element={
+                  <PrivateRoute>
+                    <FacultyChat />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Faculty: Create & Edit Experiment */}
-            <Route
-              path="/experiment/create"
-              element={
-                <PrivateRoute>
-                  <CreateExperiment />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/experiment/:id/edit"
-              element={
-                <PrivateRoute>
-                  <CreateExperiment />
-                </PrivateRoute>
-              }
-            />
+              {/* Labs Hub */}
+              <Route
+                path="/labs"
+                element={
+                  <PrivateRoute>
+                    <LabsHub />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Experiment View */}
-            <Route
-              path="/experiment/:id"
-              element={
-                <PrivateRoute>
-                  <ExperimentView />
-                </PrivateRoute>
-              }
-            />
+              {/* Faculty: Create & Edit Experiment */}
+              <Route
+                path="/experiment/create"
+                element={
+                  <PrivateRoute>
+                    <CreateExperiment />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/experiment/:id/edit"
+                element={
+                  <PrivateRoute>
+                    <CreateExperiment />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Quiz Page */}
-            <Route
-              path="/experiment/:id/quiz"
-              element={
-                <PrivateRoute>
-                  <QuizPage />
-                </PrivateRoute>
-              }
-            />
+              {/* Experiment View */}
+              <Route
+                path="/experiment/:id"
+                element={
+                  <PrivateRoute>
+                    <ExperimentView />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Result Page */}
-            <Route
-              path="/experiment/:id/result"
-              element={
-                <PrivateRoute>
-                  <ResultPage />
-                </PrivateRoute>
-              }
-            />
+              {/* Quiz Page */}
+              <Route
+                path="/experiment/:id/quiz"
+                element={
+                  <PrivateRoute>
+                    <QuizPage />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Badge Management (Admin) */}
-            <Route
-              path="/badge-management"
-              element={
-                <PrivateRoute>
-                  <BadgeManagement />
-                </PrivateRoute>
-              }
-            />
+              {/* Result Page */}
+              <Route
+                path="/experiment/:id/result"
+                element={
+                  <PrivateRoute>
+                    <ResultPage />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Diagram Generator (Admin) */}
-            <Route
-              path="/diagram-generator"
-              element={
-                <PrivateRoute>
-                  <DiagramGenerator />
-                </PrivateRoute>
-              }
-            />
+              {/* Badge Management (Admin) */}
+              <Route
+                path="/badge-management"
+                element={
+                  <PrivateRoute>
+                    <BadgeManagement />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Coding Grounds - Online Code Editor */}
-            <Route
-              path="/coding-grounds"
-              element={
-                <PrivateRoute>
-                  <CodingGrounds />
-                </PrivateRoute>
-              }
-            />
+              {/* Diagram Generator (Admin) */}
+              <Route
+                path="/diagram-generator"
+                element={
+                  <PrivateRoute>
+                    <DiagramGenerator />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* AI Settings (Admin) */}
-            <Route
-              path="/ai-settings"
-              element={
-                <PrivateRoute>
-                  <AISettings />
-                </PrivateRoute>
-              }
-            />
+              {/* Coding Grounds - Online Code Editor */}
+              <Route
+                path="/coding-grounds"
+                element={
+                  <PrivateRoute>
+                    <CodingGrounds />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Virtual Chemistry Lab */}
-            <Route
-              path="/chemistry-lab"
-              element={
-                <PrivateRoute>
-                  <ChemistryLab />
-                </PrivateRoute>
-              }
-            />
+              {/* AI Settings (Admin) */}
+              <Route
+                path="/ai-settings"
+                element={
+                  <PrivateRoute>
+                    <AISettings />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* AR Chemistry Lab */}
-            <Route
-              path="/chemistry-lab-ar"
-              element={
-                <PrivateRoute>
-                  <ChemistryLabAR />
-                </PrivateRoute>
-              }
-            />
+              {/* Virtual Chemistry Lab */}
+              <Route
+                path="/chemistry-lab"
+                element={
+                  <PrivateRoute>
+                    <ChemistryLab />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Camera-Based AR Chemistry Lab */}
-            <Route
-              path="/ar-chemistry-camera"
-              element={
-                <PrivateRoute>
-                  <ARChemistryLabCamera />
-                </PrivateRoute>
-              }
-            />
+              {/* AR Chemistry Lab */}
+              <Route
+                path="/chemistry-lab-ar"
+                element={
+                  <PrivateRoute>
+                    <ChemistryLabAR />
+                  </PrivateRoute>
+                }
+              />
 
-            {/* Virtual Physics Lab */}
-            <Route
-              path="/physics-lab"
-              element={
-                <PrivateRoute>
-                  <PhysicsLab />
-                </PrivateRoute>
-              }
-            />
-          </Routes>
-        </div>
-      </Router>
+              {/* Camera-Based AR Chemistry Lab */}
+              <Route
+                path="/ar-chemistry-camera"
+                element={
+                  <PrivateRoute>
+                    <ARChemistryLabCamera />
+                  </PrivateRoute>
+                }
+              />
+
+              {/* Virtual Physics Lab */}
+              <Route
+                path="/physics-lab"
+                element={
+                  <PrivateRoute>
+                    <PhysicsLab />
+                  </PrivateRoute>
+                }
+              />
+            </Routes>
+          </div>
+        </Router>
+      </SocketProvider>
     </AuthProvider>
   );
 }

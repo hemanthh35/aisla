@@ -7,6 +7,7 @@
     "@babylonjs/gui": "^8.43.0",
     "@babylonjs/loaders": "^8.43.0",
     "@babylonjs/materials": "^8.43.0",
+    "aisla": "file:..",
     "axios": "^1.6.2",
     "chart.js": "^4.5.1",
     "html2canvas": "^1.4.1",

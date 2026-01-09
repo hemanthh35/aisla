@@ -21,6 +21,7 @@ import AISettings from './pages/AISettings';
 import ChemistryLab from './pages/ChemistryLab';
 import ChemistryLabAR from './pages/ChemistryLabAR';
 import ARChemistryLabCamera from './pages/ARChemistryLabCamera';
+import PhysicsLab from './pages/PhysicsLab';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -201,6 +202,16 @@ function App() {
               element={
                 <PrivateRoute>
                   <ARChemistryLabCamera />
+                </PrivateRoute>
+              }
+            />
+
+            {/* Virtual Physics Lab */}
+            <Route
+              path="/physics-lab"
+              element={
+                <PrivateRoute>
+                  <PhysicsLab />
                 </PrivateRoute>
               }
             />

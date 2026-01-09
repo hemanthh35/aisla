@@ -64,6 +64,22 @@ const LabsHub = () => {
             ),
             route: '/diagram-generator',
             color: 'orange'
+        },
+        {
+            id: 'physics',
+            title: 'Physics Lab',
+            description: 'Explore the laws of motion, optics, and electromagnetism in a virtual physics laboratory. Conduct interactive experiments.',
+            icon: (
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2z" />
+                    <path d="M2.05 10.5h20" />
+                    <path d="M12 2.05v20" />
+                    <path d="M4.93 4.93l14.14 14.14" />
+                    <path d="M19.07 4.93L4.93 19.07" />
+                </svg>
+            ),
+            route: '/physics-lab',
+            color: 'red'
         }
     ];
 

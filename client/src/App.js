@@ -24,6 +24,7 @@ import ChemistryLab from './pages/ChemistryLab';
 import ChemistryLabAR from './pages/ChemistryLabAR';
 import ARChemistryLabCamera from './pages/ARChemistryLabCamera';
 import PhysicsLab from './pages/PhysicsLab';
+import VivaVoice from './pages/VivaVoice';
 import PrivateRoute from './components/PrivateRoute';
 import './App.css';
 
@@ -233,6 +234,16 @@ function App() {
                 element={
                   <PrivateRoute>
                     <PhysicsLab />
+                  </PrivateRoute>
+                }
+              />
+
+              {/* Viva Voice */}
+              <Route
+                path="/viva-voice"
+                element={
+                  <PrivateRoute>
+                    <VivaVoice />
                   </PrivateRoute>
                 }
               />

@@ -179,6 +179,7 @@ const Landing = () => {
 
                     <div className="nav-links">
                         <a href="#features" className="nav-link">Features</a>
+                        <a href="#comparison" className="nav-link">Comparison</a>
                         <a href="#how-it-works" className="nav-link">How it Works</a>
                         <a href="#benefits" className="nav-link">Benefits</a>
                     </div>
@@ -319,6 +320,220 @@ const Landing = () => {
                             </div>
                         </div>
                     ))}
+                </div>
+            </section>
+
+            {/* Comparison Section */}
+            <section className="comparison" id="comparison">
+                <div className="comparison-bg"></div>
+                <div className="comparison-header">
+                    <span className="comparison-badge">System Comparison</span>
+                    <h2 className="comparison-title">Traditional Labs vs AISLA</h2>
+                    <p className="comparison-subtitle">
+                        See how AISLA revolutionizes lab education with sustainable, accessible, and intelligent learning
+                    </p>
+                </div>
+
+                <div className="comparison-container">
+                    {/* Traditional System Column */}
+                    <div className="comparison-column traditional">
+                        <div className="comparison-column-header">
+                            <div className="comparison-column-icon traditional-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                                    <polyline points="9 22 9 12 15 12 15 22" />
+                                </svg>
+                            </div>
+                            <h3>Traditional Labs</h3>
+                        </div>
+                        <div className="comparison-features">
+                            <div className="comparison-feature negative">
+                                <span className="feature-icon">✗</span>
+                                <div className="feature-content">
+                                    <h4>Limited Access</h4>
+                                    <p>Fixed lab hours, physical presence required</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature negative">
+                                <span className="feature-icon">✗</span>
+                                <div className="feature-content">
+                                    <h4>High Resource Waste</h4>
+                                    <p>Chemical waste, energy consumption, paper usage</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature negative">
+                                <span className="feature-icon">✗</span>
+                                <div className="feature-content">
+                                    <h4>Safety Concerns</h4>
+                                    <p>Risk of accidents, hazardous materials handling</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature negative">
+                                <span className="feature-icon">✗</span>
+                                <div className="feature-content">
+                                    <h4>Costly Infrastructure</h4>
+                                    <p>Expensive equipment, maintenance, and space</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature negative">
+                                <span className="feature-icon">✗</span>
+                                <div className="feature-content">
+                                    <h4>Manual Record Keeping</h4>
+                                    <p>Paper-based lab manuals and notebooks</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature negative">
+                                <span className="feature-icon">✗</span>
+                                <div className="feature-content">
+                                    <h4>No Instant Feedback</h4>
+                                    <p>Wait days for lab report grades</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature negative">
+                                <span className="feature-icon">✗</span>
+                                <div className="feature-content">
+                                    <h4>Limited Experiments</h4>
+                                    <p>Restricted by equipment availability</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature negative">
+                                <span className="feature-icon">✗</span>
+                                <div className="feature-content">
+                                    <h4>No Personalization</h4>
+                                    <p>One-size-fits-all learning approach</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* VS Divider */}
+                    <div className="comparison-divider">
+                        <div className="divider-circle">
+                            <span>VS</span>
+                        </div>
+                    </div>
+
+                    {/* AISLA System Column */}
+                    <div className="comparison-column aisla">
+                        <div className="comparison-column-header">
+                            <div className="comparison-column-icon aisla-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5z" />
+                                    <path d="M2 17l10 5 10-5" />
+                                    <path d="M2 12l10 5 10-5" />
+                                </svg>
+                            </div>
+                            <h3>AISLA Platform</h3>
+                        </div>
+                        <div className="comparison-features">
+                            <div className="comparison-feature positive">
+                                <span className="feature-icon">✓</span>
+                                <div className="feature-content">
+                                    <h4>24/7 Global Access</h4>
+                                    <p>Learn anytime, anywhere with cloud-based labs</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature positive">
+                                <span className="feature-icon">✓</span>
+                                <div className="feature-content">
+                                    <h4>100% Sustainable</h4>
+                                    <p>Zero chemical waste, carbon-neutral digital platform</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature positive">
+                                <span className="feature-icon">✓</span>
+                                <div className="feature-content">
+                                    <h4>Completely Safe</h4>
+                                    <p>Virtual simulations eliminate all physical risks</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature positive">
+                                <span className="feature-icon">✓</span>
+                                <div className="feature-content">
+                                    <h4>Cost-Effective</h4>
+                                    <p>No equipment costs, minimal infrastructure needed</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature positive">
+                                <span className="feature-icon">✓</span>
+                                <div className="feature-content">
+                                    <h4>AI-Powered Automation</h4>
+                                    <p>Digital records, OCR extraction, smart tracking</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature positive">
+                                <span className="feature-icon">✓</span>
+                                <div className="feature-content">
+                                    <h4>Instant AI Feedback</h4>
+                                    <p>Real-time evaluation and personalized guidance</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature positive">
+                                <span className="feature-icon">✓</span>
+                                <div className="feature-content">
+                                    <h4>Unlimited Experiments</h4>
+                                    <p>500+ experiments across multiple disciplines</p>
+                                </div>
+                            </div>
+                            <div className="comparison-feature positive">
+                                <span className="feature-icon">✓</span>
+                                <div className="feature-content">
+                                    <h4>Adaptive Learning</h4>
+                                    <p>AI tailors experience to individual pace & style</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Key Advantages */}
+                <div className="comparison-advantages">
+                    <h3 className="advantages-title">AISLA's Sustainable Advantage</h3>
+                    <div className="advantages-grid">
+                        <div className="advantage-card">
+                            <div className="advantage-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M12 2a10 10 0 0 1 10 10 4 4 0 0 1-5 5 4 4 0 0 1-5-5 4 4 0 0 1-5 5 4 4 0 0 1-5-5 10 10 0 0 1 10-10Z" />
+                                    <path d="M8.5 8.5v.01" />
+                                    <path d="M15.5 8.5v.01" />
+                                    <path d="M12 15a3 3 0 0 0 3-3" />
+                                </svg>
+                            </div>
+                            <h4>Environmental Impact</h4>
+                            <p>Reduces carbon footprint by <strong>85%</strong> compared to traditional labs</p>
+                        </div>
+                        <div className="advantage-card">
+                            <div className="advantage-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <line x1="12" y1="1" x2="12" y2="23" />
+                                    <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+                                </svg>
+                            </div>
+                            <h4>Cost Savings</h4>
+                            <p>Institutions save <strong>70% annually</strong> on lab operational costs</p>
+                        </div>
+                        <div className="advantage-card">
+                            <div className="advantage-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                                    <circle cx="9" cy="7" r="4" />
+                                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+                                </svg>
+                            </div>
+                            <h4>Accessibility</h4>
+                            <p>Reaches <strong>10x more students</strong> with equal quality education</p>
+                        </div>
+                        <div className="advantage-card">
+                            <div className="advantage-icon">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+                                </svg>
+                            </div>
+                            <h4>Learning Efficiency</h4>
+                            <p>Students learn <strong>3x faster</strong> with AI-powered guidance</p>
+                        </div>
+                    </div>
                 </div>
             </section>
 

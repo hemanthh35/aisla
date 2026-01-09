@@ -242,6 +242,20 @@
     background: rgba(239, 68, 68, 0.1);
 }
 
+.lab-card.indigo .lab-icon-wrapper {
+    background: rgba(99, 102, 241, 0.1);
+    color: #818cf8;
+}
+
+.lab-card.indigo:hover {
+    border-color: rgba(99, 102, 241, 0.3);
+}
+
+.lab-card.indigo .lab-action {
+    color: #818cf8;
+    background: rgba(99, 102, 241, 0.1);
+}
+
 /* Responsive */
 @media (max-width: 768px) {
     .labs-header {

@@ -1,0 +1,272 @@
+/* VivaVoice.css */
+:root {
+    --primary-glow: rgba(99, 102, 241, 0.6);
+    --secondary-glow: rgba(139, 92, 246, 0.4);
+    --danger-glow: rgba(239, 68, 68, 0.5);
+}
+
+.viva-voice-container {
+    padding: 2rem;
+    min-height: 100vh;
+    background: radial-gradient(circle at 50% 10%, #1e1e24 0%, #0a0a0f 100%);
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Background elements */
+.bg-glow {
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.viva-back-btn {
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    padding: 0.75rem 1.5rem;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: white;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    transition: all 0.2s ease;
+    z-index: 20;
+    font-weight: 500;
+    backdrop-filter: blur(10px);
+}
+
+.viva-back-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateX(-2px);
+}
+
+.viva-header {
+    text-align: center;
+    margin-top: 2rem;
+    margin-bottom: 4rem;
+    z-index: 10;
+    position: relative;
+}
+
+.viva-title {
+    font-size: 3.5rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+    background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    text-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+    letter-spacing: -1px;
+}
+
+.viva-subtitle {
+    color: var(--neutral-400);
+    font-size: 1.1rem;
+    opacity: 0.8;
+}
+
+.viva-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3rem;
+    width: 100%;
+    max-width: 800px;
+    z-index: 10;
+}
+
+/* Visualizer / Avatar */
+.visualizer-container {
+    width: 250px;
+    height: 250px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.visualizer-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 2px solid rgba(99, 102, 241, 0.3);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+    opacity: 0;
+}
+
+.visualizer-ring.r1 {
+    width: 100%;
+    height: 100%;
+}
+
+.visualizer-ring.r2 {
+    width: 80%;
+    height: 80%;
+}
+
+.visualizer-ring.r3 {
+    width: 120%;
+    height: 120%;
+    border-color: rgba(167, 139, 250, 0.2);
+}
+
+.visualizer-main {
+    width: 160px;
+    height: 160px;
+    background: linear-gradient(145deg, #1e1e24, #2d2d35);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    box-shadow:
+        10px 10px 20px #0a0a0f,
+        -5px -5px 15px rgba(255, 255, 255, 0.05),
+        0 0 0 4px rgba(99, 102, 241, 0.1);
+    z-index: 5;
+    transition: all 0.5s ease;
+}
+
+.visualizer-icon {
+    font-size: 3rem;
+    color: var(--neutral-500);
+    transition: all 0.3s ease;
+    z-index: 6;
+}
+
+/* Active State Animations */
+.active .visualizer-main {
+    box-shadow: 0 0 50px var(--primary-glow);
+    border: 2px solid rgba(99, 102, 241, 0.5);
+    background: linear-gradient(145deg, #2d2d35, #1e1e24);
+}
+
+.active .visualizer-icon {
+    color: #818cf8;
+    filter: drop-shadow(0 0 10px #6366f1);
+}
+
+.active .visualizer-ring {
+    animation: ripple 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+.active .visualizer-ring.r2 {
+    animation-delay: 0.5s;
+}
+
+.active .visualizer-ring.r3 {
+    animation-delay: 1s;
+}
+
+@keyframes ripple {
+    0% {
+        transform: scale(0.8);
+        opacity: 0.5;
+        border-width: 2px;
+    }
+
+    100% {
+        transform: scale(1.5);
+        opacity: 0;
+        border-width: 0px;
+    }
+}
+
+/* Status Text */
+.status-pill {
+    padding: 0.75rem 2rem;
+    border-radius: 50px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--neutral-400);
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+.status-pill.active {
+    background: rgba(99, 102, 241, 0.15);
+    border-color: #6366f1;
+    color: #a5b4fc;
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+}
+
+.status-pill.error {
+    background: rgba(239, 68, 68, 0.15);
+    border-color: #ef4444;
+    color: #fca5a5;
+}
+
+/* Controls */
+.controls {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.viva-btn {
+    padding: 1.25rem 3.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-start {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: white;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-start:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.btn-start:disabled {
+    opacity: 0.6;
+    cursor: wait;
+    filter: grayscale(0.5);
+}
+
+.btn-stop {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.btn-stop:hover {
+    background: rgba(239, 68, 68, 0.2);
+    box-shadow: 0 0 20px rgba(239, 68, 68, 0.2);
+    transform: translateY(-2px);
+}
+
+/* Icon tweaks */
+.viva-btn svg {
+    width: 24px;
+    height: 24px;
+}

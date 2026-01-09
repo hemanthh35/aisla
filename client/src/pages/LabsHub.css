@@ -1,0 +1,251 @@
+.labs-hub-page {
+    min-height: 100vh;
+    background-color: var(--bg-dark);
+    background-image:
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.05) 0%, transparent 20%),
+        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 20%);
+    color: var(--text-primary);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.labs-hub-container {
+    max-width: 1200px;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.labs-header {
+    margin-bottom: 4rem;
+    text-align: center;
+    position: relative;
+}
+
+.labs-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.labs-header p {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.back-btn {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-secondary);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.back-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Labs Grid */
+.labs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    padding: 0 1rem;
+}
+
+.lab-card {
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 20px;
+    padding: 2.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    height: 100%;
+}
+
+.lab-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 100%;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.03) 0%, transparent 100%);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.lab-card:hover {
+    transform: translateY(-5px);
+    border-color: rgba(99, 102, 241, 0.3);
+    box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.3);
+}
+
+.lab-card:hover::before {
+    opacity: 1;
+}
+
+/* Card content */
+.lab-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    transition: transform 0.3s;
+}
+
+.lab-card:hover .lab-icon-wrapper {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.lab-icon-wrapper svg {
+    width: 40px;
+    height: 40px;
+    stroke-width: 1.5;
+}
+
+.lab-card h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--text-primary);
+}
+
+.lab-card p {
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 2rem;
+    flex-grow: 1;
+}
+
+.lab-action {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 500;
+    font-size: 0.95rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+
+.lab-action svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s;
+}
+
+.lab-card:hover .lab-action svg {
+    transform: translateX(4px);
+}
+
+/* Variations */
+.lab-card.blue .lab-icon-wrapper {
+    background: rgba(59, 130, 246, 0.1);
+    color: #60a5fa;
+}
+
+.lab-card.blue:hover {
+    border-color: rgba(59, 130, 246, 0.3);
+}
+
+.lab-card.blue .lab-action {
+    color: #60a5fa;
+    background: rgba(59, 130, 246, 0.1);
+}
+
+.lab-card.purple .lab-icon-wrapper {
+    background: rgba(139, 92, 246, 0.1);
+    color: #a78bfa;
+}
+
+.lab-card.purple:hover {
+    border-color: rgba(139, 92, 246, 0.3);
+}
+
+.lab-card.purple .lab-action {
+    color: #a78bfa;
+    background: rgba(139, 92, 246, 0.1);
+}
+
+.lab-card.green .lab-icon-wrapper {
+    background: rgba(34, 197, 94, 0.1);
+    color: #4ade80;
+}
+
+.lab-card.green:hover {
+    border-color: rgba(34, 197, 94, 0.3);
+}
+
+.lab-card.green .lab-action {
+    color: #4ade80;
+    background: rgba(34, 197, 94, 0.1);
+}
+
+.lab-card.orange .lab-icon-wrapper {
+    background: rgba(249, 115, 22, 0.1);
+    color: #fb923c;
+}
+
+.lab-card.orange:hover {
+    border-color: rgba(249, 115, 22, 0.3);
+}
+
+.lab-card.orange .lab-action {
+    color: #fb923c;
+    background: rgba(249, 115, 22, 0.1);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .labs-header {
+        margin-bottom: 2rem;
+    }
+
+    .back-btn {
+        position: static;
+        margin-bottom: 1.5rem;
+        width: fit-content;
+        transform: none;
+    }
+
+    .labs-header h1 {
+        font-size: 2rem;
+    }
+
+    .labs-grid {
+        grid-template-columns: 1fr;
+    }
+}

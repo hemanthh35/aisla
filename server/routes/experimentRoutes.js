@@ -8,7 +8,8 @@ import {
     updateExperiment,
     deleteExperiment,
     aiExplain,
-    extractText
+    extractText,
+    extractPDFText
 } from '../controllers/experimentController.js';
 import Experiment from '../models/Experiment.js';
 import User from '../models/User.js';
@@ -19,6 +20,17 @@ const router = express.Router();
 
 // All routes are protected
 router.use(protect);
+
+// AI features (Moved to top to avoid route conflicts)
+router.post('/extract-text', (req, res, next) => {
+    console.log('🔍 [API] OCR Extraction requested');
+    next();
+}, extractText);
+
+router.post('/extract-pdf', (req, res, next) => {
+    console.log('📄 [API] PDF Extraction requested');
+    next();
+}, extractPDFText);
 
 /**
  * POST /api/experiment/generate-from-topic
@@ -259,8 +271,5 @@ router.get('/', getExperiments);
 router.get('/:id', getExperiment);
 router.put('/:id', updateExperiment);
 router.delete('/:id', deleteExperiment);
-
-// AI features
-router.post('/extract-text', extractText);
 
 export default router;

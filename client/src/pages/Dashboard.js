@@ -31,8 +31,9 @@ const Dashboard = () => {
     experimentTitle: ''
   });
 
-  const isFaculty = user?.role === 'faculty' || user?.role === 'admin';
-  const isAdmin = user?.role === 'admin';
+  const role = user?.role?.toLowerCase();
+  const isFaculty = role === 'faculty' || role === 'admin';
+  const isAdmin = role === 'admin';
 
   useEffect(() => {
     fetchData();
@@ -270,13 +271,14 @@ const Dashboard = () => {
               Experiments
             </div>
 
-            <Link to="/coding-grounds" className="sidebar-link">
+            <Link to="/labs" className="sidebar-link">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <polyline points="16 18 22 12 16 6" />
-                <polyline points="8 6 2 12 8 18" />
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
               </svg>
-              Coding Grounds
+              Labs & Tools
             </Link>
+
+
 
             {!isFaculty && (
               <>
@@ -299,14 +301,7 @@ const Dashboard = () => {
 
             {isAdmin && (
               <>
-                <Link to="/faculty-dashboard" className="sidebar-link">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <line x1="18" y1="20" x2="18" y2="10" />
-                    <line x1="12" y1="20" x2="12" y2="4" />
-                    <line x1="6" y1="20" x2="6" y2="14" />
-                  </svg>
-                  Faculty Dashboard
-                </Link>
+
                 <Link to="/admin-dashboard" className="sidebar-link">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="7" height="7" />
@@ -323,14 +318,7 @@ const Dashboard = () => {
                   </svg>
                   Badge Management
                 </Link>
-                <Link to="/diagram-generator" className="sidebar-link">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <path d="M3 9h18" />
-                    <path d="M9 21V9" />
-                  </svg>
-                  Diagram Generator
-                </Link>
+
               </>
             )}
 
@@ -346,18 +334,6 @@ const Dashboard = () => {
               </Link>
             )}
 
-            {/* Chemistry Lab - Available to all users */}
-            <Link to="/chemistry-lab" className="sidebar-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 18h8" />
-                <path d="M3 22h18" />
-                <path d="M14 22a7 7 0 1 0 0-14h-1" />
-                <path d="M9 14h2" />
-                <path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z" />
-                <path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3" />
-              </svg>
-              Chemistry Lab
-            </Link>
 
             {/* Physics Lab - Available to all users */}
             <Link to="/physics-lab" className="sidebar-link">
@@ -371,15 +347,8 @@ const Dashboard = () => {
 
 
 
-            {/* Camera-Based AR Chemistry Lab - Works on all phones */}
-            <Link to="/ar-chemistry-camera" className="sidebar-link">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                <circle cx="12" cy="13" r="4" />
-                <path d="M12 9v.01" />
-              </svg>
-              AR Chem Camera
-            </Link>
+
+
 
             {isAdmin && (
               <Link to="/ai-settings" className="sidebar-link">
@@ -471,6 +440,18 @@ const Dashboard = () => {
               <div className="stat-label">{isFaculty ? 'Created Experiments' : 'Available Experiments'}</div>
             </div>
 
+            <div className="stat-card" onClick={() => navigate('/labs')} style={{ cursor: 'pointer' }}>
+              <div className="stat-header">
+                <div className="stat-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="stat-value">Labs</div>
+              <div className="stat-label">Virtual & AR Labs</div>
+            </div>
+
             {!isFaculty && (
               <>
                 <div className="stat-card">
@@ -557,44 +538,28 @@ const Dashboard = () => {
             ) : (
               <div className="experiments-grid">
                 {experiments.map((exp) => (
-                  <div key={exp._id} className="experiment-card" onClick={() => navigate(`/experiment/${exp._id}`)}>
-                    <div className="experiment-card-header">
-                      <div className="experiment-icon">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M6 18h8" />
-                          <path d="M3 22h18" />
-                          <path d="M14 22a7 7 0 1 0 0-14h-1" />
-                        </svg>
+                  <div key={exp._id} className="experiment-card-v2" onClick={() => navigate(`/experiment/${exp._id}`)}>
+                    <div className="card-header-v2">
+                      <div className="card-icon-container">
+                        <div className="card-icon-v2">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M6 13h12" />
+                            <path d="M12 7c2 0 4 2 4 4s-2 4-4 4-4-2-4-4 2-4 4-4Z" />
+                            <path d="M22 17l-10 5L2 17" />
+                            <path d="M2 12l10 5 10-5" />
+                            <path d="M2 7l10 5 10-5" />
+                          </svg>
+                        </div>
+                        {exp.difficulty && (
+                          <span className={`difficulty-badge-v2 ${exp.difficulty.toLowerCase()}`}>
+                            {exp.difficulty}
+                          </span>
+                        )}
                       </div>
-                      {exp.difficulty && (
-                        <span className={`experiment-badge ${exp.difficulty}`}>
-                          {exp.difficulty}
-                        </span>
-                      )}
-                    </div>
-                    <h4 className="experiment-title">{exp.title}</h4>
-                    <p className="experiment-aim">{exp.content?.aim?.substring(0, 100)}...</p>
-                    <div className="experiment-meta">
-                      <span className="experiment-date">
-                        {new Date(exp.createdAt).toLocaleDateString()}
-                      </span>
-                      {exp.quizGenerated && (
-                        <button
-                          className="experiment-quiz-btn"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            navigate(`/experiment/${exp._id}/quiz`);
-                          }}
-                        >
-                          Take Quiz
-                        </button>
-                      )}
-                    </div>
-                    {(isAdmin || (isFaculty && exp.createdBy === user?._id)) && (
-                      <div className="experiment-actions" onClick={(e) => e.stopPropagation()}>
-                        {(isAdmin || exp.createdBy === user?._id) && (
+                      {(isAdmin || isFaculty) && (
+                        <div className="card-actions-v2" onClick={(e) => e.stopPropagation()}>
                           <button
-                            className="experiment-action-btn edit-btn"
+                            className="card-action-btn-v2"
                             onClick={() => navigate(`/experiment/${exp._id}/edit`)}
                             title="Edit Experiment"
                           >
@@ -603,20 +568,39 @@ const Dashboard = () => {
                               <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
                             </svg>
                           </button>
-                        )}
-                        <button
-                          className="experiment-action-btn delete-btn"
-                          onClick={() => handleDeleteExperiment(exp._id)}
-                          title="Delete Experiment"
-                        >
-                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M3 6h18" />
-                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          <button
+                            className="card-action-btn-v2 delete"
+                            onClick={() => handleDeleteExperiment(exp._id)}
+                            title="Delete Experiment"
+                          >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M3 6h18" />
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                            </svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="card-content-v2">
+                      <h4 className="card-title-v2">{exp.title}</h4>
+                      <p className="card-aim-v2">{exp.content?.aim || exp.title}</p>
+                    </div>
+
+                    <div className="card-footer-v2">
+                      <div className="footer-line"></div>
+                      <span className="card-date-v2">
+                        {new Date(exp.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'numeric', year: 'numeric' })}
+                      </span>
+                      {exp.quizGenerated && (
+                        <div className="quiz-status-indicator" title="Quiz Available">
+                          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                            <polyline points="20 6 9 17 4 12" />
                           </svg>
-                        </button>
-                      </div>
-                    )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

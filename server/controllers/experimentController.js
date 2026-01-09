@@ -52,7 +52,7 @@ const createExperiment = async (req, res) => {
 
             if (studentEmails.length > 0) {
                 console.log(`📧 Sending notification emails to ${studentEmails.length} students...`);
-                
+
                 // Send emails asynchronously
                 emailService.sendNewExperimentNotification(
                     studentEmails,
@@ -165,12 +165,17 @@ const updateExperiment = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to update this experiment' });
         }
 
-        const { title, subject, difficulty, content } = req.body;
+        const { title, subject, difficulty, content, rawContent } = req.body;
 
         if (title) experiment.title = title;
         if (subject) experiment.subject = subject;
         if (difficulty) experiment.difficulty = difficulty;
         if (content) experiment.content = content;
+
+        if (rawContent) {
+            if (!experiment.originalContent) experiment.originalContent = { type: 'text' };
+            experiment.originalContent.text = rawContent;
+        }
 
         await experiment.save();
 
@@ -276,6 +281,36 @@ const extractText = async (req, res) => {
     }
 };
 
+// @desc    Extract text from PDF
+// @route   POST /api/experiment/extract-pdf
+// @access  Private (Faculty only)
+const extractPDFText = async (req, res) => {
+    try {
+        const { pdfBase64 } = req.body;
+
+        if (!pdfBase64) {
+            return res.status(400).json({ message: 'PDF data is required' });
+        }
+
+        const result = await aiService.extractTextFromPDF(pdfBase64);
+
+        if (!result.success) {
+            return res.status(500).json({
+                message: 'PDF text extraction failed',
+                error: result.error
+            });
+        }
+
+        res.json({
+            success: true,
+            text: result.text
+        });
+    } catch (error) {
+        console.error('Extract PDF Text Error:', error);
+        res.status(500).json({ message: error.message });
+    }
+};
+
 export {
     createExperiment,
     getExperiments,
@@ -283,5 +318,6 @@ export {
     updateExperiment,
     deleteExperiment,
     aiExplain,
-    extractText
+    extractText,
+    extractPDFText
 };

@@ -99,6 +99,13 @@ const DiagramGenerator = () => {
         setTimeout(() => setCopied(false), 2000);
     };
 
+    const handleClear = () => {
+        setDescription('');
+        setDiagramCode('');
+        setError('');
+        if (diagramRef.current) diagramRef.current.innerHTML = '';
+    };
+
     const handleDownload = () => {
         const blob = new Blob([diagramCode], { type: 'text/plain' });
         const url = URL.createObjectURL(blob);
@@ -183,25 +190,40 @@ Examples:
                         ))}
                     </div>
 
-                    <button
-                        className="generate-btn"
-                        onClick={handleGenerate}
-                        disabled={loading || !description.trim()}
-                    >
-                        {loading ? (
-                            <>
-                                <span className="spinner"></span>
-                                Generating...
-                            </>
-                        ) : (
-                            <>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                                </svg>
-                                Generate Diagram
-                            </>
-                        )}
-                    </button>
+                    <div className="button-group">
+                        <button
+                            className="generate-btn"
+                            onClick={handleGenerate}
+                            disabled={loading || !description.trim()}
+                        >
+                            {loading ? (
+                                <>
+                                    <span className="spinner"></span>
+                                    Generating...
+                                </>
+                            ) : (
+                                <>
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                                    </svg>
+                                    Generate Diagram
+                                </>
+                            )}
+                        </button>
+
+                        <button
+                            className="clear-btn"
+                            onClick={handleClear}
+                            disabled={loading}
+                            title="Clear Input and Output"
+                        >
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <line x1="18" y1="6" x2="6" y2="18" />
+                                <line x1="6" y1="6" x2="18" y2="18" />
+                            </svg>
+                            Clear
+                        </button>
+                    </div>
 
                     {error && <div className="error-message">{error}</div>}
                 </section>

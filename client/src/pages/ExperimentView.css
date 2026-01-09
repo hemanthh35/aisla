@@ -643,6 +643,69 @@
     color: var(--neutral-200);
 }
 
+/* AI Table Styling */
+.ai-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(99, 102, 241, 0.2);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.ai-table thead {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(6, 182, 212, 0.2) 100%);
+}
+
+.ai-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--cyan-300);
+    border-bottom: 2px solid rgba(99, 102, 241, 0.3);
+    font-size: 0.875rem;
+}
+
+.ai-table td {
+    padding: 0.75rem 1rem;
+    color: var(--neutral-300);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 0.875rem;
+}
+
+.ai-table tr:last-child td {
+    border-bottom: none;
+}
+
+.ai-table tr:hover {
+    background: rgba(99, 102, 241, 0.05);
+}
+
+/* AI List Styling */
+.ai-list {
+    list-style: none;
+    margin: 0.75rem 0;
+    padding-left: 0;
+}
+
+.ai-list li {
+    position: relative;
+    padding-left: 1.75rem;
+    margin-bottom: 0.75rem;
+    color: var(--neutral-300);
+    line-height: 1.6;
+}
+
+.ai-list li::before {
+    content: '\u2022';
+    position: absolute;
+    left: 0.5rem;
+    color: var(--primary-400);
+    font-weight: bold;
+    font-size: 1.25rem;
+}
+
 /* Streaming cursor */
 .streaming-cursor {
     color: var(--primary-400);
@@ -685,6 +748,280 @@
     50% {
         opacity: 0.5;
     }
+}
+
+/* ================================
+   Diagram Display
+   ================================ */
+
+.diagram-response {
+    margin: 1.5rem 2rem 2rem;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%);
+    border: 1px solid rgba(6, 182, 212, 0.2);
+    border-radius: var(--radius-2xl);
+    overflow: hidden;
+}
+
+.diagram-response-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%);
+    border-bottom: 1px solid rgba(6, 182, 212, 0.2);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--cyan-300);
+}
+
+.diagram-response-header svg {
+    width: 20px;
+    height: 20px;
+    color: var(--cyan-400);
+}
+
+.close-diagram {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--neutral-400);
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0 0.5rem;
+    transition: color 0.2s;
+}
+
+.close-diagram:hover {
+    color: var(--neutral-100);
+}
+
+.diagram-response-body {
+    padding: 1.5rem;
+}
+
+.diagram-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    padding: 3rem 2rem;
+    color: var(--neutral-400);
+}
+
+.diagram-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Mermaid Visual Container */
+.diagram-visual {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    border: 2px solid rgba(99, 102, 241, 0.3);
+    border-radius: var(--radius-xl);
+    padding: 2.5rem;
+    overflow: auto;
+    max-height: 700px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.mermaid-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 300px;
+}
+
+.mermaid-container svg {
+    max-width: 100%;
+    height: auto;
+    filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.2));
+}
+
+/* Enhance Mermaid diagram colors */
+.mermaid-container svg .node rect,
+.mermaid-container svg .node circle,
+.mermaid-container svg .node ellipse,
+.mermaid-container svg .node polygon {
+    stroke-width: 2px !important;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+}
+
+.mermaid-container svg text {
+    fill: #ffffff;
+    font-weight: 600;
+    font-size: 15px;
+    font-family: 'Inter', system-ui, sans-serif;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.mermaid-container svg .edgeLabel {
+    background-color: rgba(31, 41, 55, 0.95) !important;
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+}
+
+.mermaid-container svg .edgeLabel text {
+    font-size: 13px !important;
+}
+
+.mermaid-container svg path.flowchart-link {
+    stroke-width: 3px !important;
+}
+
+.mermaid-container svg marker path {
+    stroke-width: 1px !important;
+}
+
+/* Code Details (Collapsible) */
+.diagram-code-details {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.code-summary {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-300);
+    list-style: none;
+    user-select: none;
+    transition: all 0.2s;
+}
+
+.code-summary::-webkit-details-marker {
+    display: none;
+}
+
+.code-summary:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--cyan-300);
+}
+
+.code-summary svg {
+    width: 16px;
+    height: 16px;
+    color: var(--cyan-400);
+    transition: transform 0.2s;
+}
+
+.diagram-code-details[open] .code-summary svg {
+    transform: rotate(90deg);
+}
+
+.diagram-code {
+    background: rgba(0, 0, 0, 0.3);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+}
+
+.code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    background: rgba(255, 255, 255, 0.02);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--neutral-300);
+}
+
+.copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
+    border: 1px solid rgba(6, 182, 212, 0.3);
+    border-radius: var(--radius-md);
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--cyan-300);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.copy-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.copy-btn:hover {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(99, 102, 241, 0.25) 100%);
+    border-color: rgba(6, 182, 212, 0.5);
+    transform: translateY(-1px);
+}
+
+.diagram-code pre {
+    margin: 0;
+    padding: 1.25rem;
+    overflow-x: auto;
+    background: none;
+    border: none;
+}
+
+.diagram-code code {
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: var(--neutral-200);
+}
+
+.diagram-preview {
+    padding: 1.25rem;
+    background: rgba(99, 102, 241, 0.05);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-radius: var(--radius-lg);
+}
+
+.diagram-note {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.8;
+    color: var(--neutral-400);
+}
+
+.diagram-note strong {
+    color: var(--cyan-300);
+}
+
+.diagram-note a {
+    color: var(--cyan-400);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+}
+
+.diagram-note a:hover {
+    color: var(--cyan-300);
+    text-decoration: underline;
+}
+
+.diagram-error {
+    text-align: center;
+    padding: 2rem;
+    color: var(--error-400);
+    font-weight: 500;
+}
+
+.diagram-btn {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.15) 0%, rgba(99, 102, 241, 0.15) 100%);
+    border-color: rgba(6, 182, 212, 0.3);
+}
+
+.diagram-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25) 0%, rgba(99, 102, 241, 0.25) 100%);
+    border-color: rgba(6, 182, 212, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(6, 182, 212, 0.3);
 }
 
 /* Buttons */
@@ -1024,4 +1361,340 @@
         width: 280px;
         max-height: 400px;
     }
+}
+
+/* ================================
+   AI Diagram Styles
+   ================================ */
+
+.diagram-response {
+    margin-top: 2rem;
+    background: #111827;
+    border: 1px solid #374151;
+    border-radius: 12px;
+    overflow: hidden;
+    animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes slideInUp {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.diagram-response-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 1.5rem;
+    background: #1f2937;
+    border-bottom: 1px solid #374151;
+    color: #f3f4f6;
+    font-weight: 600;
+}
+
+.diagram-response-header svg {
+    width: 20px;
+    height: 20px;
+    color: #ec4899;
+}
+
+.close-diagram {
+    margin-left: auto;
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.2s;
+}
+
+.close-diagram:hover {
+    color: #f3f4f6;
+}
+
+.diagram-response-body {
+    padding: 1.5rem;
+}
+
+.diagram-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem;
+    color: #9ca3af;
+}
+
+.diagram-container-main {
+    display: flex;
+    flex-direction: column;
+}
+
+.mermaid-container {
+    background-color: #0f172a;
+    border-radius: 12px;
+    padding: 2rem;
+    overflow: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #1e293b;
+    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+    min-height: 350px;
+    width: 100%;
+}
+
+.mermaid-container.compact {
+    padding: 1.5rem;
+    min-height: 250px;
+    max-height: 700px;
+}
+
+.diagram-visual-compact {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin: 1.5rem 0;
+}
+
+.diagram-actions-top {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    justify-content: flex-end;
+}
+
+.diagram-action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: #10b981;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.diagram-action-btn:hover {
+    filter: brightness(1.1);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+}
+
+.diagram-action-btn.secondary {
+    background: #4f46e5;
+}
+
+.mermaid-container svg {
+    width: 100% !important;
+    max-width: 1200px !important;
+    height: auto !important;
+    max-height: 600px !important;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Stylish node text */
+.mermaid-container svg text {
+    fill: #ffffff !important;
+    font-weight: 600 !important;
+    font-size: 15px !important;
+    font-family: 'Inter', system-ui, sans-serif !important;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* More Colorful Mermaid Nodes */
+.mermaid-container .node .label {
+    color: #ffffff !important;
+}
+
+.mermaid-container .node rect {
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.2));
+}
+
+/* Primary Color for Main Nodes */
+.mermaid-container .primary rect {
+    fill: #6366f1 !important;
+    stroke: #4f46e5 !important;
+}
+
+/* Secondary Color for Process Nodes */
+.mermaid-container .secondary rect {
+    fill: #ec4899 !important;
+    stroke: #db2777 !important;
+}
+
+/* Success Color for Result Nodes */
+.mermaid-container .success rect {
+    fill: #10b981 !important;
+    stroke: #059669 !important;
+}
+
+/* Warning Color for Decision/Attention Nodes */
+.mermaid-container .warning rect {
+    fill: #f59e0b !important;
+    stroke: #d97706 !important;
+}
+
+.diagram-code-details {
+    margin-top: 1.5rem;
+    background: #0f172a;
+    border: 1px solid #1e293b;
+    border-radius: 8px;
+}
+
+.code-summary {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    color: #94a3b8;
+    font-size: 0.875rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    user-select: none;
+}
+
+.code-summary svg {
+    width: 16px;
+    height: 16px;
+}
+
+.code-summary:hover {
+    color: #e2e8f0;
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.diagram-code {
+    padding: 1rem;
+    background: #020617;
+    border-top: 1px solid #1e293b;
+}
+
+.code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.code-header span {
+    color: #64748b;
+    font-family: monospace;
+    font-size: 0.75rem;
+}
+
+.copy-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 1px solid #334155;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.copy-btn:hover {
+    background: #334155;
+    border-color: #475569;
+}
+
+.copy-btn svg {
+    width: 14px;
+    height: 14px;
+}
+
+.diagram-code pre {
+    margin: 0;
+    padding: 1rem;
+    background: #0f172a;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+
+.diagram-code code {
+    color: #cbd5e1;
+    font-family: 'Fira Code', 'Cascadia Code', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.5;
+}
+
+.diagram-preview {
+    margin-top: 1rem;
+}
+
+.diagram-note {
+    font-size: 0.8125rem;
+    color: #64748b;
+    line-height: 1.6;
+}
+
+.diagram-note a {
+    color: #38bdf8;
+    text-decoration: none;
+}
+
+.diagram-note a:hover {
+    text-decoration: underline;
+}
+
+.diagram-error {
+    color: #f87171;
+    padding: 2rem;
+    text-align: center;
+    background: rgba(239, 68, 68, 0.05);
+    border-radius: 8px;
+    border: 1px dashed rgba(239, 68, 68, 0.2);
+}
+
+.ai-actions-container {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+    padding: 1rem 0;
+}
+
+.diagram-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.875rem;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.diagram-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    filter: brightness(1.1);
+}
+
+.diagram-btn:active {
+    transform: translateY(0);
+}
+
+.diagram-btn svg {
+    width: 18px;
+    height: 18px;
 }

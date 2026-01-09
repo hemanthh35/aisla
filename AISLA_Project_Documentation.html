@@ -539,6 +539,14 @@
                     experiment with aims, theory, apparatus, procedure, formulas, precautions</li>
                 <li><strong>3D Virtual Chemistry Lab:</strong> Students select chemicals → Babylon.js 3D environment
                     simulates reactions with visual effects</li>
+                <li><strong>AR Chemistry Camera:</strong> Mobile camera-based augmented reality experience with
+                    gyroscope
+                    support for pseudo-AR chemistry visualization</li>
+                <li><strong>Virtual Physics Lab:</strong> Interactive 3D physics simulations for mechanics, optics, and
+                    electromagnetism experiments in a safe virtual environment</li>
+                <li><strong>Real-Time Faculty Chat:</strong> Socket.IO powered messaging where students ask doubts to
+                    faculty
+                    in real-time with typing indicators and read receipts</li>
                 <li><strong>Real-Time AI Chat:</strong> Students type questions → Streaming AI responses via Server-Sent
                     Events</li>
                 <li><strong>Automated Quizzes:</strong> System generates MCQs from experiment content → Auto-grading on
@@ -546,6 +554,7 @@
                 <li><strong>Coding Playground:</strong> Students write code → Execute via Piston API → AI provides hints
                 </li>
                 <li><strong>Diagram Generation:</strong> Text description → AI generates Mermaid/Graphviz diagrams</li>
+                <li><strong>Labs & Tools Hub:</strong> Consolidated access page for all interactive labs and tools</li>
             </ul>
 
             <h3>How It Solves Problems</h3>
@@ -604,11 +613,15 @@
                 <li>User authentication with role-based access (Student, Faculty, Admin)</li>
                 <li>AI-powered experiment content generation</li>
                 <li>3D virtual chemistry laboratory with 50+ reactions</li>
+                <li>AR Chemistry Camera with mobile gyroscope support</li>
+                <li>Virtual Physics Lab with 3D simulations</li>
+                <li>Real-time faculty-student chat with Socket.IO</li>
                 <li>Real-time AI chat assistant with streaming responses</li>
                 <li>Online code editor with 5 programming languages</li>
                 <li>AI-powered quiz generation and auto-grading</li>
                 <li>Diagram generation (Mermaid, Graphviz, PlantUML, D2)</li>
                 <li>Badge and gamification system</li>
+                <li>Labs & Tools Hub for consolidated access</li>
                 <li>Responsive web interface (mobile & desktop)</li>
                 <li>MongoDB database for persistent storage</li>
             </ul>
@@ -616,7 +629,7 @@
             <h3>❌ Out of Scope (Future Work)</h3>
             <ul>
                 <li>Mobile native applications (iOS/Android)</li>
-                <li>Physics and Biology virtual labs</li>
+                <li>Biology virtual labs</li>
                 <li>Video conferencing for live classes</li>
                 <li>Multi-language (i18n) support</li>
                 <li>Offline mode functionality</li>
@@ -639,19 +652,20 @@
             <div class="arch-box">
                 <div class="arch-layer">
                     <div class="arch-layer-title">🌐 PRESENTATION LAYER (React 18 Frontend)</div>
-                    <div style="font-size:12px;margin-top:8px;">Landing Page | Dashboard | Experiments | 3D Chemistry
-                        Lab | Coding Grounds | Quiz | Badges</div>
+                    <div style="font-size:12px;margin-top:8px;">Dashboard | Labs Hub | 3D Chemistry Lab | AR Chemistry |
+                        Physics Lab | Faculty Chat | Coding Grounds | Experiments | Quiz | Badges</div>
                 </div>
-                <div class="arch-arrow">⬇️ HTTP/REST API + JWT Authentication ⬇️</div>
+                <div class="arch-arrow">⬇️ HTTP/REST API + JWT + WebSocket (Socket.IO) ⬇️</div>
                 <div class="arch-layer">
-                    <div class="arch-layer-title">⚙️ BUSINESS LOGIC LAYER (Node.js + Express)</div>
+                    <div class="arch-layer-title">⚙️ BUSINESS LOGIC LAYER (Node.js + Express + Socket.IO)</div>
                     <div style="font-size:12px;margin-top:8px;">Auth Controller | Experiment Controller | Quiz
-                        Controller | AI Service | Chat Service | Reaction Engine</div>
+                        Controller | AI Service | Faculty Chat Service | Socket Service | Reaction Engine</div>
                 </div>
-                <div class="arch-arrow">⬇️ Database Operations + AI API Calls ⬇️</div>
+                <div class="arch-arrow">⬇️ Database Operations + AI API Calls + Real-time Events ⬇️</div>
                 <div class="arch-layer">
                     <div class="arch-layer-title">💾 DATA LAYER</div>
-                    <div style="font-size:12px;margin-top:8px;">MongoDB Atlas (Users, Experiments, Quizzes, Badges) |
+                    <div style="font-size:12px;margin-top:8px;">MongoDB Atlas (Users, Experiments, ChatRooms, Messages,
+                        Quizzes, Badges) |
                         Ollama/Gemini AI | Piston Code Execution</div>
                 </div>
             </div>
@@ -716,6 +730,11 @@
                     <td>-</td>
                     <td>Styling with animations and responsive design</td>
                 </tr>
+                <tr>
+                    <td>Socket.IO Client</td>
+                    <td>4.x</td>
+                    <td>Real-time WebSocket communication for faculty chat</td>
+                </tr>
             </table>
 
             <h3>⚙️ Backend Technologies</h3>
@@ -759,6 +778,11 @@
                     <td>CORS</td>
                     <td>2.8.5</td>
                     <td>Cross-origin resource sharing</td>
+                </tr>
+                <tr>
+                    <td>Socket.IO</td>
+                    <td>4.x</td>
+                    <td>Real-time bidirectional WebSocket server</td>
                 </tr>
             </table>
 
@@ -875,6 +899,35 @@
                 <li>Users can send messages to AI assistant</li>
                 <li>System streams responses in real-time</li>
                 <li>Chat maintains conversation history</li>
+            </ul>
+
+            <h3>Faculty-Student Chat System</h3>
+            <ul>
+                <li>Students can view available faculty with online/offline status</li>
+                <li>Students can initiate real-time chat with selected faculty</li>
+                <li>Students can send doubts (❓) or task requests (📋)</li>
+                <li>Faculty receive real-time message notifications via Socket.IO</li>
+                <li>Faculty can mark doubts as "Resolved"</li>
+                <li>Faculty can update task status (Pending → In Progress → Completed)</li>
+                <li>Faculty can close/resolve chat conversations</li>
+                <li>System shows typing indicators in real-time</li>
+                <li>Messages persist with read receipts</li>
+            </ul>
+
+            <h3>AR Chemistry Camera</h3>
+            <ul>
+                <li>Mobile camera-based augmented reality experience</li>
+                <li>Gyroscope support for pseudo-AR visualization</li>
+                <li>Select chemicals and see reactions through phone camera</li>
+                <li>Compatible with non-WebXR devices</li>
+            </ul>
+
+            <h3>Virtual Physics Lab</h3>
+            <ul>
+                <li>3D physics simulations for mechanics experiments</li>
+                <li>Optics and electromagnetism experiments</li>
+                <li>Interactive controls and measurements</li>
+                <li>Safe virtual environment for experimentation</li>
             </ul>
 
             <h3>Badge System</h3>
@@ -1124,12 +1177,97 @@
                 </tr>
             </table>
 
+            <h3>ChatRoom Collection (Faculty Chat)</h3>
+            <table>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>student</td>
+                    <td>ObjectId (ref: User)</td>
+                    <td>Student who initiated chat</td>
+                </tr>
+                <tr>
+                    <td>faculty</td>
+                    <td>ObjectId (ref: User)</td>
+                    <td>Assigned faculty member</td>
+                </tr>
+                <tr>
+                    <td>status</td>
+                    <td>Enum</td>
+                    <td>active | resolved | closed | pending</td>
+                </tr>
+                <tr>
+                    <td>subject</td>
+                    <td>String</td>
+                    <td>Chat topic/subject</td>
+                </tr>
+                <tr>
+                    <td>lastMessage</td>
+                    <td>Object</td>
+                    <td>Preview of last message</td>
+                </tr>
+                <tr>
+                    <td>unreadCount</td>
+                    <td>Object</td>
+                    <td>Unread counts per participant</td>
+                </tr>
+            </table>
+
+            <h3>Message Collection (Faculty Chat)</h3>
+            <table>
+                <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                </tr>
+                <tr>
+                    <td>chatRoom</td>
+                    <td>ObjectId (ref: ChatRoom)</td>
+                    <td>Parent chat room</td>
+                </tr>
+                <tr>
+                    <td>sender</td>
+                    <td>ObjectId (ref: User)</td>
+                    <td>Message sender</td>
+                </tr>
+                <tr>
+                    <td>senderRole</td>
+                    <td>Enum</td>
+                    <td>student | faculty | system</td>
+                </tr>
+                <tr>
+                    <td>messageType</td>
+                    <td>Enum</td>
+                    <td>text | doubt | task | file | system</td>
+                </tr>
+                <tr>
+                    <td>content</td>
+                    <td>String</td>
+                    <td>Message text content</td>
+                </tr>
+                <tr>
+                    <td>metadata</td>
+                    <td>Object</td>
+                    <td>isResolved, taskStatus, etc.</td>
+                </tr>
+                <tr>
+                    <td>status</td>
+                    <td>Enum</td>
+                    <td>sent | delivered | read</td>
+                </tr>
+            </table>
+
             <h3>Entity Relationships</h3>
             <ul>
                 <li>User (1) → (M) Experiment (Faculty creates experiments)</li>
                 <li>Experiment (1) → (M) Quiz (Each experiment can have quizzes)</li>
                 <li>User (1) → (M) Submission (Students submit quiz answers)</li>
                 <li>Badge (1) → (M) UserBadge (Badges assigned to users)</li>
+                <li>User (1) → (M) ChatRoom (Faculty/Students participate in chats)</li>
+                <li>ChatRoom (1) → (M) Message (Each chat has multiple messages)</li>
             </ul>
         </div>
 
@@ -1172,6 +1310,37 @@
                 <li><strong>Piston API:</strong> External service for secure sandbox execution</li>
                 <li><strong>Language Config:</strong> Template code and version info per language</li>
                 <li><strong>Test Cases:</strong> Run code against input → compare output</li>
+            </ul>
+
+            <h3>Faculty-Student Chat Implementation</h3>
+            <p>Built with Socket.IO for real-time bidirectional communication:</p>
+            <ul>
+                <li><strong>Socket.IO Server:</strong> WebSocket server integrated with Express for real-time messaging
+                </li>
+                <li><strong>JWT Authentication:</strong> Tokens verified on WebSocket handshake for secure connections
+                </li>
+                <li><strong>Room Management:</strong> Dynamic rooms for each faculty-student chat conversation</li>
+                <li><strong>Typing Indicators:</strong> Real-time broadcast of typing status to chat participants</li>
+                <li><strong>Read Receipts:</strong> Message delivery and read status tracking</li>
+                <li><strong>Doubt/Task Tracking:</strong> Messages tagged as doubts or tasks with resolution/status
+                    management</li>
+            </ul>
+
+            <h3>Virtual Physics Lab Implementation</h3>
+            <ul>
+                <li><strong>3D Simulation Engine:</strong> Interactive physics simulations for mechanics experiments
+                </li>
+                <li><strong>Optics Module:</strong> Light refraction, reflection, and lens experiments</li>
+                <li><strong>Electromagnetism:</strong> Circuit simulations and electromagnetic field visualization</li>
+                <li><strong>Measurement Tools:</strong> Virtual instruments for taking readings</li>
+            </ul>
+
+            <h3>AR Chemistry Camera Implementation</h3>
+            <ul>
+                <li><strong>Device Orientation API:</strong> Gyroscope support for pseudo-AR experience</li>
+                <li><strong>Camera Integration:</strong> MediaDevices API for camera access</li>
+                <li><strong>Chemical Overlay:</strong> 3D molecules rendered over camera feed</li>
+                <li><strong>Reaction Visualization:</strong> Real-time reaction effects on mobile devices</li>
             </ul>
         </div>
 
@@ -1247,10 +1416,19 @@
                     hours manually)</li>
                 <li>✅ <strong>3D Chemistry Lab:</strong> 50+ chemical reactions simulated with accurate visual effects
                 </li>
+                <li>✅ <strong>AR Chemistry Camera:</strong> Mobile camera-based AR experience with gyroscope support for
+                    pseudo-AR visualization on all devices</li>
+                <li>✅ <strong>Virtual Physics Lab:</strong> Interactive 3D physics simulations for mechanics, optics,
+                    and
+                    electromagnetism experiments</li>
+                <li>✅ <strong>Real-Time Faculty Chat:</strong> Socket.IO powered messaging system with typing
+                    indicators,
+                    read receipts, and doubt/task tracking</li>
                 <li>✅ <strong>Real-Time AI Chat:</strong> Response streaming achieved with &lt;100ms latency</li>
                 <li>✅ <strong>Code Execution:</strong> Python, JavaScript, C, C++, Java execution working via Piston API
                 </li>
                 <li>✅ <strong>Quiz System:</strong> Auto-generation and instant grading functional</li>
+                <li>✅ <strong>Labs Hub:</strong> Consolidated access to all labs and tools in one place</li>
                 <li>✅ <strong>Deployment:</strong> Successfully deployed on Render at https://labs-m2g6.onrender.com/
                 </li>
             </ul>
@@ -1341,7 +1519,8 @@
             <ul>
                 <li><strong>Internet Required:</strong> Platform requires internet connectivity (no offline mode)</li>
                 <li><strong>AI Dependency:</strong> AI service must be running for content generation features</li>
-                <li><strong>Chemistry Only:</strong> 3D lab currently limited to chemistry (no physics/biology)</li>
+                <li><strong>Biology Lab Missing:</strong> Virtual lab currently covers Chemistry and Physics (no biology
+                    yet)</li>
                 <li><strong>Browser Compatibility:</strong> Best experience on modern browsers (Chrome, Firefox, Edge)
                 </li>
                 <li><strong>Local AI Hardware:</strong> Running Ollama locally requires 8GB+ RAM</li>
@@ -1358,12 +1537,21 @@
                 <h2 class="section-title">Future Enhancements</h2>
             </div>
 
+            <h3>✅ Recently Completed</h3>
+            <ul>
+                <li>✅ Virtual Physics Lab with 3D simulations</li>
+                <li>✅ AR Chemistry Camera with mobile gyroscope support</li>
+                <li>✅ Real-time faculty-student chat with Socket.IO</li>
+                <li>✅ Labs & Tools Hub for consolidated access</li>
+                <li>✅ AI Diagram Generator for flowcharts and diagrams</li>
+            </ul>
+
             <h3>Short-Term (3-6 months)</h3>
             <ul>
                 <li>📱 Progressive Web App (PWA) for mobile installation</li>
-                <li>🔬 Add Physics virtual lab (circuits, mechanics)</li>
                 <li>📊 Advanced analytics dashboard for faculty</li>
                 <li>🌍 Multi-language support (Hindi, Spanish, etc.)</li>
+                <li>📎 File sharing in faculty-student chat</li>
             </ul>
 
             <h3>Medium-Term (6-12 months)</h3>

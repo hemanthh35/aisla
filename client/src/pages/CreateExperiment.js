@@ -34,13 +34,16 @@ const CreateExperiment = () => {
         message: ''
     });
 
+    // Fetch experiment data when editing
     useEffect(() => {
-        if (isEditing) {
-            fetchExperiment();
+        if (isEditing && id) {
+            fetchExperimentData();
         }
-    }, [id]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [id, isEditing]);
 
-    const fetchExperiment = async () => {
+    const fetchExperimentData = async () => {
+        setFetching(true);
         try {
             const token = localStorage.getItem('token');
             const res = await axios.get(`/api/experiments/${id}`, {
@@ -56,6 +59,7 @@ const CreateExperiment = () => {
                 structuredContent: exp.content || {}
             });
             setMode('detailed');
+            setStep(2); // Go directly to content editing step
         } catch (err) {
             console.error('Error fetching experiment:', err);
             setError('Failed to fetch experiment for editing');
@@ -83,7 +87,8 @@ const CreateExperiment = () => {
             });
 
             if (res.data.success) {
-                navigate(`/experiment/${id}`);
+                // After editing, redirect to dashboard
+                navigate('/dashboard');
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update experiment');
@@ -293,9 +298,9 @@ const CreateExperiment = () => {
                                     elapsed: data.elapsed,
                                     message: data.message
                                 });
-                                // Navigate to the new experiment
+                                // Navigate to edit page so faculty can review/edit
                                 setTimeout(() => {
-                                    navigate(`/experiment/${data.experiment._id}`);
+                                    navigate(`/experiment/${data.experiment._id}/edit`);
                                 }, 500);
                                 break;
 
@@ -322,6 +327,79 @@ const CreateExperiment = () => {
 
     return (
         <div className="create-experiment-page">
+            {/* LOADING OVERLAY - Fetching experiment for editing */}
+            {fetching && (
+                <div className="loading-overlay">
+                    <div className="loading-content">
+                        <div className="loading-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                            </svg>
+                        </div>
+                        <h2 className="loading-title">Loading Experiment</h2>
+                        <p className="loading-message">
+                            Fetching experiment data for editing...
+                        </p>
+                        <div className="loading-progress-bar">
+                            <div className="loading-progress-fill" style={{ width: '75%' }}></div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* FULL-SCREEN LOADING OVERLAY - Prevents UI Glitches */}
+            {loading && progress.status === 'generating' && (
+                <div className="loading-overlay">
+                    <div className="loading-content">
+                        <div className="loading-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+                            </svg>
+                        </div>
+                        <h2 className="loading-title">AI is Creating Your Experiment</h2>
+                        <p className="loading-message">
+                            {progress.message || 'Generating complete experiment content...'}
+                        </p>
+                        <div className="loading-timer">
+                            <span className="loading-timer-label">Elapsed:</span>
+                            <span>{progress.elapsed}s</span>
+                        </div>
+                        <div className="loading-progress-bar">
+                            <div
+                                className="loading-progress-fill"
+                                style={{ width: `${Math.min((progress.elapsed / 90) * 100, 95)}%` }}
+                            ></div>
+                        </div>
+                        <div className="loading-tips">
+                            <p>💡 <strong>Tip:</strong> AI is generating aim, apparatus, theory, procedure, formulas, and precautions</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* PDF/Image Upload Loading Overlay */}
+            {loading && progress.status === 'extracting' && (
+                <div className="loading-overlay">
+                    <div className="loading-content">
+                        <div className="loading-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <path d="M16 13H8M16 17H8M10 9H8" />
+                            </svg>
+                        </div>
+                        <h2 className="loading-title">Processing Document</h2>
+                        <p className="loading-message">
+                            {progress.message || 'AI is extracting text from your document...'}
+                        </p>
+                        <div className="loading-progress-bar">
+                            <div className="loading-progress-fill" style={{ width: '60%' }}></div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* Header */}
             <header className="create-header">
                 <Link to="/dashboard" className="back-button" title="Back to Dashboard">
@@ -339,6 +417,7 @@ const CreateExperiment = () => {
                         type="button"
                         className={`mode-btn ${mode === 'quick' ? 'active' : ''}`}
                         onClick={() => { setMode('quick'); setStep(1); }}
+                        disabled={loading}
                     >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -349,6 +428,7 @@ const CreateExperiment = () => {
                         type="button"
                         className={`mode-btn ${mode === 'detailed' ? 'active' : ''}`}
                         onClick={() => { setMode('detailed'); setStep(1); }}
+                        disabled={loading}
                     >
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
@@ -366,15 +446,6 @@ const CreateExperiment = () => {
                 </p>
             </div>
 
-            {/* Minimal Progress Bar at the top instead of steps */}
-            {loading && (
-                <div className="minimal-progress-bar">
-                    <div
-                        className="minimal-progress-fill"
-                        style={{ width: `${Math.min((progress.elapsed / 90) * 100, 95)}%` }}
-                    ></div>
-                </div>
-            )}
 
             {/* Form Card */}
             <div className="create-form-card">

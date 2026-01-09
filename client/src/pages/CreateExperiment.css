@@ -891,3 +891,178 @@
         justify-content: center;
     }
 }
+
+/* Full-screen Loading Overlay - Fixes Glitchy UI */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(15, 23, 42, 0.95);
+    backdrop-filter: blur(8px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: fadeInOverlay 0.3s ease-out;
+}
+
+@keyframes fadeInOverlay {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.loading-content {
+    text-align: center;
+    max-width: 400px;
+    padding: 2rem;
+}
+
+.loading-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.5rem;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    border-radius: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-glow 2s infinite, float 3s ease-in-out infinite;
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.4);
+}
+
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+.loading-icon svg {
+    width: 40px;
+    height: 40px;
+    color: white;
+    animation: bolt 1s ease-in-out infinite;
+}
+
+@keyframes bolt {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+.loading-title {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--neutral-100);
+    margin-bottom: 0.5rem;
+}
+
+.loading-message {
+    font-size: 0.9375rem;
+    color: var(--neutral-400);
+    margin-bottom: 1.5rem;
+    line-height: 1.5;
+}
+
+.loading-timer {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 100px;
+    color: #a5b4fc;
+    font-weight: 600;
+    font-size: 1.125rem;
+}
+
+.loading-timer-label {
+    font-size: 0.75rem;
+    color: var(--neutral-500);
+    font-weight: 500;
+}
+
+.loading-progress-bar {
+    width: 100%;
+    max-width: 300px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin: 1.5rem auto 0;
+}
+
+.loading-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7);
+    border-radius: 3px;
+    transition: width 0.5s ease-out;
+    position: relative;
+}
+
+.loading-progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+    animation: shimmer 1.5s infinite;
+}
+
+.loading-tips {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.loading-tips p {
+    font-size: 0.8125rem;
+    color: var(--neutral-500);
+    margin: 0;
+}
+
+.loading-tips strong {
+    color: var(--neutral-400);
+}
+
+/* PDF Upload Loading State */
+.upload-option.uploading .upload-option-content {
+    background: rgba(99, 102, 241, 0.1);
+    border-color: #6366f1;
+    pointer-events: none;
+}
+
+.upload-option.uploading .upload-option-content svg {
+    animation: spin 1s linear infinite;
+    color: #6366f1;
+}
+
+/* Mode Button disabled state during loading */
+.mode-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}

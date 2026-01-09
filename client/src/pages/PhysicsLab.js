@@ -2611,9 +2611,38 @@ const PhysicsLab = () => {
     mass1.position.y = initialY1 - s;
     mass2.position.y = initialY2 + s;
 
+    // Update force arrows
+    const {
+      weight1Arrow,
+      weight2Arrow,
+      tension1Arrow,
+      tension2Arrow,
+      size1,
+      size2,
+    } = pendulumRef.current;
+
+    // Calculate tension T = (2 * m1 * m2 / (m1 + m2)) * g
+    const T = (2 * m1 * m2 * g) / (m1 + m2);
+    const tensionScale = T / (g * 5); // Normalized scale
+
+    if (weight1Arrow) {
+      weight1Arrow.position.y = mass1.position.y - size1 / 2 - 0.4;
+    }
+    if (weight2Arrow) {
+      weight2Arrow.position.y = mass2.position.y - size2 / 2 - 0.4;
+    }
+    if (tension1Arrow) {
+      tension1Arrow.position.y = mass1.position.y + size1 / 2 + 0.4;
+      tension1Arrow.scaling.y = tensionScale;
+    }
+    if (tension2Arrow) {
+      tension2Arrow.position.y = mass2.position.y + size2 / 2 + 0.4;
+      tension2Arrow.scaling.y = tensionScale;
+    }
+
     // Update strings
-    const stringLen1 = Math.max(0.1, pulleyY - mass1.position.y - 0.2);
-    const stringLen2 = Math.max(0.1, pulleyY - mass2.position.y - 0.2);
+    const stringLen1 = Math.max(0.1, pulleyY - mass1.position.y - size1 / 2);
+    const stringLen2 = Math.max(0.1, pulleyY - mass2.position.y - size2 / 2);
     string1.scaling.y = stringLen1 / 2;
     string1.position.y = pulleyY - stringLen1 / 2;
     string2.scaling.y = stringLen2 / 2;

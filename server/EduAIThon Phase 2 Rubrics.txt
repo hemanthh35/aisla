@@ -1,0 +1,20 @@
+EduAIThon Phase 2 Rubrics
+
+
+
+
+Criterion	Excellent (5)	Good (4)	Satisfactory (3)	Needs Improvement (1–2)	Marks
+Prototype Implementation & Functionality	Fully functional, stable, end-to-end working prototype	Mostly functional with minor issues	Partially functional prototype	Incomplete or unstable	5
+Educational Effectiveness of the Model	Concept becomes significantly easier to understand; strong learning impact	Concept is clear with moderate learning gain	Concept partially clear	Poor learning value	5
+Visualization / AR / VR / Simulation	High-quality, interactive visualization strongly aiding learning	Good visualization with learning support	Basic visualization	Weak or no visualization	5
+AI Model Design (NOT API Usage)	Clear model architecture, problem formulation, and rationale	Model design mostly clear	Basic model idea	No clear model design	5
+Dataset Creation & Preprocessing	Well-designed dataset (own/generated/simulated); preprocessing justified	Dataset used with some preprocessing	Dataset used with minimal processing	Dataset missing or poorly justified	5
+Model Training & Experimentation	Model trained with multiple experiments, tuning, iterations	Model trained with some experimentation	Single training run	No real training done	5
+Evaluation & Validation of Model	Clear metrics, test cases, user validation, learning effectiveness measured	Some metrics or validation shown	Minimal validation	No validation	5
+Integration of AI with Educational Prototype	AI meaningfully enhances learning (adaptive feedback, prediction, guidance)	AI adds moderate value	AI weakly connected	AI not useful or cosmetic	5
+Innovation in Learning Design	Highly innovative pedagogy (adaptive, experiential, heutagogical)	Some innovation present	Conventional design	No innovation	5
+Documentation & Demonstration	Excellent documentation, clear demo, training pipeline explained	Good documentation and demo	Basic documentation	Poor or missing	5
+
+
+
+

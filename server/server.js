@@ -106,4 +106,27 @@ server.listen(PORT, '0.0.0.0', () => {
 
   // Connect to MongoDB after server starts
   connectDB();
+
+  // KEEP-ALIVE PING FOR RENDER (PREVENTS SLEEPING)
+  // Render spins down free tier instances after 15 mins of inactivity.
+  // We ping the health check endpoint every 14 minutes.
+  const PING_INTERVAL = 14 * 60 * 1000; // 14 minutes
+  const SERVER_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+
+  console.log(`⏰ Keep-alive ping scheduled every 14 minutes for: ${SERVER_URL}`);
+
+  setInterval(async () => {
+    try {
+      console.log(`💓 Sending keep-alive ping to ${SERVER_URL}...`);
+      // Use standard fetch if available (Node 18+) or import axios
+      const response = await fetch(SERVER_URL);
+      if (response.ok) {
+        console.log(`✅ Keep-alive ping successful: ${response.status}`);
+      } else {
+        console.log(`⚠️ Keep-alive ping returned status: ${response.status}`);
+      }
+    } catch (error) {
+      console.error(`❌ Keep-alive ping failed: ${error.message}`);
+    }
+  }, PING_INTERVAL);
 });

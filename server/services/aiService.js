@@ -166,7 +166,10 @@ JSON format:
 
 Return ONLY valid JSON, no explanation.`;
 
-    const system = `Expert science teacher. Output: valid JSON only. Be concise.`;
+    const system = `Expert science teacher. 
+STRICT RULE: Generate content ONLY for scientific/educational experiments (Physics, Chemistry, Biology, Coding).
+If the topic is non-educational (e.g. cooking, lifestyle), reject it.
+Output: valid JSON only. Be concise.`;
 
     const result = await callAI(prompt, system, { maxTokens: 800, temperature: 0.9 });
 
@@ -311,9 +314,9 @@ Keep examples brief and clear.`
     };
 
     const systemPrompts = {
-        simple: 'You are a concise teacher. Output ONLY bullet points. No extra text.',
-        detailed: 'You are an expert who explains briefly. MAX 150 words. No fluff.',
-        example: 'You are practical. Give 2 SHORT examples. MAX 100 words total.'
+        simple: 'You are a concise teacher. STRICTLY educational topics only. If asked about non-educational topics (e.g. cooking), refuse. Output ONLY bullet points. No extra text.',
+        detailed: 'You are an expert. STRICTLY educational topics only. Refuse non-educational topics. MAX 150 words.',
+        example: 'You are practical. STRICTLY educational examples only. Give 2 SHORT examples. MAX 100 words total.'
     };
 
     // Helper to send SSE with flush
@@ -1323,7 +1326,10 @@ Create a comprehensive experiment with rich, educational content. Return ONLY va
 
 IMPORTANT: Generate detailed, accurate, educational content. Do not use placeholders. Fill every field with substantive content relevant to "${topicName}".`;
 
-    const system = `You are an experienced science teacher and curriculum designer. Create educational, accurate, and engaging experiment content. Always return valid JSON only, no additional text or markdown.`;
+    const system = `You are an experienced science teacher. 
+STRICT RULE: Restrict to educational topics ONLY (Science, Coding, Labs). 
+If the topic is about cooking, lifestyle, or entertainment, DO NOT generate content.
+Always return valid JSON only, no additional text or markdown.`;
 
     const result = await callAI(prompt, system, {
         maxTokens: 2500,
